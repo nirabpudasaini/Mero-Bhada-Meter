@@ -1,0 +1,88 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:background="#000000"
+    android:orientation="vertical" >
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Your Fare Details:"
+        android:gravity="center"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#0404c9" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" >
+
+        <TextView
+            android:id="@+id/distance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/distance"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#0404c9" />
+
+        <TextView
+            android:id="@+id/distance_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/distance_value"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#0404c9" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" >
+
+        <TextView
+            android:id="@+id/rate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/rate"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#0404c9" />
+
+        <TextView
+            android:id="@+id/rate_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/rate_value"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#0404c9" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center" >
+
+        <TextView
+            android:id="@+id/fare"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/fare"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#0404c9" />
+
+        <TextView
+            android:id="@+id/fare_value"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/fare_value"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textColor="#0404c9" />
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_farepopoup_ok"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Ok" />
+
+</LinearLayout>
