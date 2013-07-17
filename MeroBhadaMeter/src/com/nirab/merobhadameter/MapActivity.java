@@ -383,7 +383,7 @@ public class MapActivity extends Activity implements MapEventsReceiver,
 		new UpdateRoadTask().execute(waypoints);
 	}
 
-	// TODO
+	
 	private void calculateFare(Road road) {
 
 		if (road == null)
