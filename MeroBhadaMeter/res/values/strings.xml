@@ -7,7 +7,7 @@
     <string name="faredetails">Please Select the Starting Point and the Destination in order to get fare details</string>
     <string name="normal_taxi">Normal Taxi (Black Number Plate)</string>
     <string name="tourist_taxi">Tourist Taxi (Green Number Plate)</string>
-    <string name="select_vechial">Please Select the type of Vechial</string>
+    <string name="select_vehicle">Please Select the type of Vehicle</string>
     <string name="departure">Departure</string>
     <string name="destination">Destination</string>
     <string name="viapoint">Via-Point</string>
@@ -18,6 +18,11 @@
     <string name="rate_value">0.00     </string>
     <string name="fare_value">0.00     </string>
     <string name="search">Search</string>
-    
+    <string name="action_search">Search</string>
+    <string name="action_download">Download</string>
+    <string name="action_offline">Make Offline</string>
+    <string name="action_track">Start Tracking</string>
+    <string name="action_stop_track">Start Tracking</string>
+    <string name="action_preference">Preferences</string>
 
 </resources>

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:com.nirab.merobhadameter="http://schemas.android.com/apk/res-auto" >
+
+   
+    <item
+        android:id="@+id/action_track"
+        android:showAsAction="ifRoom|withText"
+        android:title="@string/action_track"/>
+<!--     <item -->
+<!--         android:id="@+id/action_search" -->
+<!--         android:showAsAction="ifRoom" -->
+<!--         android:icon="@drawable/ic_action_search" -->
+<!--         android:title="@string/action_search"/> -->
+
+    <item
+        android:id="@+id/action_download"
+        android:title="@string/action_download"/>
+    <item
+        android:id="@+id/action_preference"
+        android:title="@string/action_preference"/>
+<!--        <item -->
+<!--         android:id="@+id/action_preference" -->
+<!--         android:title="@string/action_preference" -->
+<!--         android:showAsAction="ifRoom" -->
+<!--         android:icon="@drawable/2_action_settings"/> -->
+
+</menu>

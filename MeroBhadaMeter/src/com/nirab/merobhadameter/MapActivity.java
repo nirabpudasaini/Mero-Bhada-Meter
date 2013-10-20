@@ -1,6 +1,12 @@
 package com.nirab.merobhadameter;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,34 +30,46 @@ import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.PathOverlay;
 import org.osmdroid.views.overlay.SimpleLocationOverlay;
 
-import android.app.Activity;
+import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
+import android.location.GpsStatus;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.PowerManager;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextMenu;
+import android.view.ContextMenu.ContextMenuInfo;
+import android.view.Gravity;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ContextMenu.ContextMenuInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-public class MapActivity extends Activity implements MapEventsReceiver,
-		LocationListener {
+import com.actionbarsherlock.app.SherlockActivity;
+
+public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 
 	MapView mv;
 	MapController mc;
-	protected GeoPoint startPoint, destinationPoint, kathmandu;
+	Button mapb;
+	protected GeoPoint gpsStartPoint, gpsDestinationPoint, startPoint,
+			destinationPoint, kathmandu;
+	private LocationManager locationManager;
 	protected ArrayList<GeoPoint> viaPoints;
 	protected ItemizedOverlayWithBubble<ExtendedOverlayItem> itineraryMarkers;
 	protected static int START_INDEX = -2, DEST_INDEX = -1;
@@ -62,12 +80,26 @@ public class MapActivity extends Activity implements MapEventsReceiver,
 	protected ItemizedOverlayWithBubble<ExtendedOverlayItem> roadNodeMarkers;
 	protected PathOverlay roadOverlay;
 
-	String fv = "0.00", rv = "0.00", dv = "0.00";
+	private PowerManager.WakeLock wakeLock; // used to prevent device sleep
+	private boolean gpsFix; // whether we have a GPS fix for accurate data
+	private Location previousLocation;
+	private long distanceTraveled; // total distance the user traveled
+	private long startTime; // time (in milliseconds) when tracking starts
+	private static final double MILLISECONDS_PER_HOUR = 1000 * 60 * 60;
+
+	SharedPreferences preferences;
+	boolean tracking, offline_mode;
+
+	ProgressDialog mProgressDialog;
+
+	Double road_distance;
+	String vehicle_type;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
-		// TODO Auto-generated method stub
 		super.onCreate(savedInstanceState);
+		preferences = PreferenceManager.getDefaultSharedPreferences(this);
+
 		setContentView(R.layout.map);
 		mv = (MapView) findViewById(R.id.mapview);
 		mv.setTileSource(TileSourceFactory.MAPNIK);
@@ -78,20 +110,32 @@ public class MapActivity extends Activity implements MapEventsReceiver,
 
 		mc = mv.getController();
 		kathmandu = new GeoPoint(27.7167, 85.3667);
+		distanceTraveled = 0;
 
 		// To use MapEventsReceiver methods, we add a MapEventsOverlay:
 		MapEventsOverlay overlay = new MapEventsOverlay(this, this);
 		mv.getOverlays().add(overlay);
 
-		LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+		MapEventsOverlay gpsOverlay = new MapEventsOverlay(this, this);
+		mv.getOverlays().add(gpsOverlay);
+
+		mProgressDialog = new ProgressDialog(MapActivity.this);
+		mProgressDialog.setMessage("Downloading, Please be Patince");
+		mProgressDialog.setIndeterminate(true);
+		mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		mProgressDialog.setCancelable(true);
+
+		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+		locationManager.addGpsStatusListener(gpsStatusListener);
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
-				30 * 1000, 100.0f, this);
+				1000, 20, locationListener);
 
 		if (savedInstanceState == null) {
 			Location l = locationManager
 					.getLastKnownLocation(LocationManager.GPS_PROVIDER);
 			if (l != null) {
 				startPoint = new GeoPoint(l.getLatitude(), l.getLongitude());
+
 			} else {
 				// we put a hard-coded start
 				startPoint = kathmandu;
@@ -143,7 +187,7 @@ public class MapActivity extends Activity implements MapEventsReceiver,
 
 		// register for the long press that brings the context menu, registered
 		// in the textview because mapview will also catch map drag events
-		Button mapb = (Button) findViewById(R.id.mapview_btn);
+		mapb = (Button) findViewById(R.id.mapview_btn);
 		mapb.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View view) {
 
@@ -151,6 +195,31 @@ public class MapActivity extends Activity implements MapEventsReceiver,
 		});
 
 		registerForContextMenu(mapb);
+
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		//TODO
+		offline_mode = preferences.getBoolean("offline_chkbox_preference", false);
+		if (offline_mode){
+			Intent offlineMap = new Intent(MapActivity.this, OfflineMapActivity.class);
+			startActivity(offlineMap);
+		}
+		// get the app's power manager
+		PowerManager powerManager = (PowerManager) getSystemService(Context.POWER_SERVICE);
+		// get a wakelock preventing the device from sleeping
+		wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,
+				"No sleep");
+		wakeLock.acquire(); // acquire the wake lock
+	}
+
+	@Override
+	protected void onStop() {
+
+		super.onStop();
+		wakeLock.release(); // release the wakelock
 
 	}
 
@@ -383,91 +452,74 @@ public class MapActivity extends Activity implements MapEventsReceiver,
 		new UpdateRoadTask().execute(waypoints);
 	}
 
-	
 	private void calculateFare(Road road) {
 
 		if (road == null)
 			return;
 
-//		 final Dialog d = new Dialog(this);
-//		 d.setContentView(R.layout.fare_popup);
-//		
-//		 TextView fare_value = (TextView) findViewById(R.id.fare_value);
-//		 TextView rate_value = (TextView) findViewById(R.id.rate_value);
-//		 TextView distance_value = (TextView)findViewById(R.id.distance_value);
+		
 
-		Bundle bundle = getIntent().getExtras();
-		double rateperkm = bundle.getDouble("rateperkm");
-		double waitingcharge = bundle.getDouble("waiting");
-		double maxrate = bundle.getDouble("maxrate");
-		String taxi_type = bundle.getString("taxi_type");
+		//TODO Calculate the rate using Shared Preference and the Calculate Fare Class
+		
 
-		if (taxi_type.equals("normal")) {
-			rv = "Rs " + rateperkm + " per Kilometer and Rs " + waitingcharge
-					+ " per 2 min waiting";
-		}
-		else if (taxi_type.equals("tourist")) {
-			rv = "Rs " + rateperkm + " for 5 Km and Rs " + waitingcharge
-					+ " for additional km, Rs " + maxrate + "maximum";
-		}
-		else{
-			rv = "Could not get the rate";
-		}
 
 		if (road.mStatus == Road.STATUS_DEFAULT) {
-			dv = "Could not get distance";
-			fv = "Could not calculate fare";
-			showFare();
-//			 distance_value.setText(dv);
-//			 rate_value.setText(rv);
-//			 fare_value.setText(fv);
-//			 d.show();
-
+			
+			// Show error if route could not be fetched
+			Toast.makeText(this, "Error getting the distance", Toast.LENGTH_SHORT).show();
 			return;
 
 		}
-
-		dv = String.valueOf(road.mLength);
 		
-		if (taxi_type.equals("normal")) {
-			double fare = (road.mLength * rateperkm) + 10;
-			fv = String.valueOf(fare);
-		}
 		
-		if (taxi_type.equals("tourist")) {
-			if (road.mLength < 5.00) {
-				fv = String.valueOf(rateperkm);
-			} else {
-				double fare = ((road.mLength - 5) * waitingcharge + rateperkm);
-				if (fare > maxrate) {
-					fare = maxrate;
-				}
-				fv = String.valueOf(fare);
-			}
-		}
+		//TODO
+		road_distance = road.mLength;
+		vehicle_type = preferences.getString("vehicle_list_preference", "01");
+		Fare taxifare = new Fare(road_distance, vehicle_type);
+		
+		
+		
+//
+//		if (taxi_type.equals("normal")) {
+//			double fare = (road.mLength * rateperkm) + 10;
+//			fv = String.valueOf(fare);
+//		}
+//
+//		if (taxi_type.equals("tourist")) {
+//			if (road.mLength < 5.00) {
+//				fv = String.valueOf(rateperkm);
+//			} else {
+//				double fare = ((road.mLength - 5) * waitingcharge + rateperkm);
+//				if (fare > maxrate) {
+//					fare = maxrate;
+//				}
+//				fv = String.valueOf(fare);
+//			}
+//		}
+//
+//		Log.i("distance value", dv);
+//		Log.i("rate value", rv);
+//		Log.i("fare value", fv);
+//		showFare();
 
-		Log.i("distance value", dv);
-		Log.i("rate value", rv);
-		Log.i("fare value", fv);
-		showFare();
-
-
-//		fare_value.setText(fv);
-//		distance_value.setText(dv);
-//		rate_value.setText(rv);
-//		d.show();
+		// fare_value.setText(fv);
+		// distance_value.setText(dv);
+		// rate_value.setText(rv);
+		// d.show();
 
 	}
+
 	
-	public void showFare(){
-		Intent popup = new Intent(MapActivity.this, FarePopUp.class);
-		Bundle popup_bundle = new Bundle();
-		popup_bundle.putString("distance_value", dv );
-		popup_bundle.putString("rate_value", rv );
-		popup_bundle.putString("fare_value", fv );
-		popup.putExtras(popup_bundle);
-		startActivity(popup);
-	}
+	//TODO this method is unnecessary, this must be done in calculatefare class
+//	public void showFare() {
+//		Intent popup = new Intent(MapActivity.this, FarePopUp.class);
+//		Bundle popup_bundle = new Bundle();
+//		popup_bundle.putString("distance_value", dv);
+//		popup_bundle.putString("rate_value", rv);
+//		popup_bundle.putString("fare_value", fv);
+//		popup.putExtras(popup_bundle);
+//		startActivity(popup);
+//	}
 
 	private void putRoadNodes(Road road) {
 		roadNodeMarkers.removeAllItems();
@@ -533,33 +585,298 @@ public class MapActivity extends Activity implements MapEventsReceiver,
 
 	@Override
 	public boolean singleTapUpHelper(IGeoPoint arg0) {
-		// TODO Auto-generated method stub
+
 		return false;
 	}
 
 	@Override
-	public void onLocationChanged(Location location) {
-		// TODO Auto-generated method stub
-		myLocationOverlay.setLocation(new GeoPoint(location));
-
+	public boolean onCreateOptionsMenu(com.actionbarsherlock.view.Menu menu) {
+		getSupportMenuInflater().inflate(R.menu.map_activity_actions, menu);
+		return true;
 	}
 
 	@Override
-	public void onProviderDisabled(String provider) {
-		// TODO Auto-generated method stub
+	public boolean onOptionsItemSelected(
+			com.actionbarsherlock.view.MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.action_track:
 
+			if (tracking) {
+
+				// compute the total time we were tracking
+
+				long milliseconds = System.currentTimeMillis() - startTime;
+
+				double totalHours = milliseconds / MILLISECONDS_PER_HOUR;
+
+				// create a dialog displaying the results
+
+				AlertDialog.Builder dialogBuilder =
+
+				new AlertDialog.Builder(MapActivity.this);
+				dialogBuilder.setTitle("Fare Value");
+
+				double distanceKM = distanceTraveled / 1000.0;
+				double totalMins = totalHours * 60;
+
+				// display distanceTraveled traveled and average speed
+				dialogBuilder.setMessage(String.format(
+						"You travelled %f Kilometers in %f minutes",
+						distanceKM, totalMins));
+				dialogBuilder.setPositiveButton("Ok", null);
+				dialogBuilder.show(); // display the dialog
+				tracking = false;
+				item.setTitle("Strat Tracking");
+				mapb.setEnabled(true);
+
+			} else {
+				item.setTitle("Stop Tracking");
+				tracking = true;
+				mapb.setEnabled(false);
+				startTime = System.currentTimeMillis(); // get current time
+
+				mv.invalidate(); // clear the route
+				distanceTraveled = 0;
+				previousLocation = null; // starting a new route
+
+			}
+
+			return true;
+
+		case R.id.action_preference:
+
+			Intent i = new Intent(MapActivity.this, MyPreferencesActivity.class);
+			startActivity(i);
+
+			return true;
+
+		case R.id.action_download:
+
+			final DownloadTask downloadTask = new DownloadTask(MapActivity.this);
+			downloadTask
+					.execute("https://dl.dropboxusercontent.com/u/95497883/kathmandu-2013-8-12.map");
+
+			mProgressDialog
+					.setOnCancelListener(new DialogInterface.OnCancelListener() {
+						@Override
+						public void onCancel(DialogInterface dialog) {
+							downloadTask.cancel(true);
+						}
+					});
+
+		}
+
+		return super.onOptionsItemSelected(item);
 	}
 
-	@Override
-	public void onProviderEnabled(String provider) {
-		// TODO Auto-generated method stub
+	// AsyncTask to download a file
+	private class DownloadTask extends AsyncTask<String, Integer, String> {
 
+		private Context context;
+
+		public DownloadTask(Context context) {
+			this.context = context;
+		}
+
+		@Override
+		protected String doInBackground(String... sUrl) {
+			// take CPU lock to prevent CPU from going off if the user
+			// presses the power button during download
+			PowerManager pm = (PowerManager) context
+					.getSystemService(Context.POWER_SERVICE);
+			PowerManager.WakeLock wl = pm.newWakeLock(
+					PowerManager.PARTIAL_WAKE_LOCK, getClass().getName());
+			wl.acquire();
+
+			try {
+				InputStream input = null;
+				OutputStream output = null;
+				HttpURLConnection connection = null;
+				try {
+					URL url = new URL(sUrl[0]);
+					connection = (HttpURLConnection) url.openConnection();
+					connection.connect();
+
+					// expect HTTP 200 OK, so we don't mistakenly save error
+					// report
+					// instead of the file
+					if (connection.getResponseCode() != HttpURLConnection.HTTP_OK)
+						return "Server returned HTTP "
+								+ connection.getResponseCode() + " "
+								+ connection.getResponseMessage();
+
+					// TODO
+
+					File file = new File(Environment
+							.getExternalStorageDirectory().getPath()
+							+ "/kathmandu.map");
+
+					if (file.exists()) {
+						Log.i("File Exists", "Code Gets here, file exists");
+						return "exists";
+						// if (connection.getResponseCode() ==
+						// HttpURLConnection.HTTP_NOT_MODIFIED) {
+						//
+						// return null;
+						// }
+					}
+
+					// this will be useful to display download percentage
+					// might be -1: server did not report the length
+					int fileLength = connection.getContentLength();
+					Log.i("Length", String.valueOf(fileLength));
+
+					// download the file
+					input = connection.getInputStream();
+					output = new FileOutputStream(Environment
+							.getExternalStorageDirectory().getPath()
+							+ "/kathmandu.map");
+
+					byte data[] = new byte[4096];
+					long total = 0;
+					int count;
+					while ((count = input.read(data)) != -1) {
+						// allow canceling with back button
+						if (isCancelled())
+							return null;
+						total += count;
+						// publishing the progress....
+						if (fileLength > 0) // only if total length is known
+							publishProgress((int) (total * 100 / fileLength));
+						output.write(data, 0, count);
+					}
+				} catch (Exception e) {
+					return e.toString();
+				} finally {
+					try {
+						if (output != null)
+							output.close();
+						if (input != null)
+							input.close();
+					} catch (IOException ignored) {
+					}
+
+					if (connection != null)
+						connection.disconnect();
+				}
+			} finally {
+				wl.release();
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+			mProgressDialog.show();
+		}
+
+		@Override
+		protected void onProgressUpdate(Integer... progress) {
+			super.onProgressUpdate(progress);
+			// if we get here, length is known, now set indeterminate to false
+			mProgressDialog.setIndeterminate(false);
+			mProgressDialog.setMax(100);
+			mProgressDialog.setProgress(progress[0]);
+		}
+
+		@Override
+		protected void onPostExecute(String result) {
+			mProgressDialog.dismiss();
+			if (result != null) {
+				if (result == "exists") {
+					Toast.makeText(context,
+							"File Already Exists and is up to date",
+							Toast.LENGTH_LONG).show();
+				} else {
+					Toast.makeText(context, "Download error: " + result,
+							Toast.LENGTH_LONG).show();
+				}
+			}
+
+			else {
+				Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT)
+						.show();
+			}
+		}
 	}
 
-	@Override
-	public void onStatusChanged(String provider, int status, Bundle extras) {
-		// TODO Auto-generated method stub
+	// update location on map
+	public void updateLocation(Location location) {
+		if (location != null && gpsFix) // location not null; have GPS fix
+		{
+			// add the given Location to the route
 
-	}
+			markerStart = putMarkerItem(markerStart, gpsStartPoint,
+					START_INDEX, R.string.departure,
+					R.drawable.marker_departure, -1);
+			markerDestination = putMarkerItem(markerDestination, new GeoPoint(
+					location), DEST_INDEX, R.string.destination,
+					R.drawable.marker_destination, -1);
+			getRoadAsync();
+
+			// if there is a previous location
+			if (previousLocation != null) {
+				// add to the total distanceTraveled
+				distanceTraveled += location.distanceTo(previousLocation);
+			} // end if
+				// get the latitude and longitude
+			Double latitude = location.getLatitude() * 1E6;
+			Double longitude = location.getLongitude() * 1E6;
+			// create GeoPoint representing the given Locations
+			GeoPoint point = new GeoPoint(latitude.intValue(),
+					longitude.intValue());
+			// move the map to the current location
+			mc.animateTo(point);
+
+		} // end if
+
+		previousLocation = location;
+	} // end method updateLocation
+
+	// responds to events from the LocationManager
+	private final LocationListener locationListener = new LocationListener() {
+		// when the location is changed
+		@Override
+		public void onLocationChanged(Location location) {
+
+			gpsFix = true; // if getting Locations, then we have a GPS fix
+			myLocationOverlay.setLocation(new GeoPoint(location));// current
+																	// Position
+			if (tracking) // if we're currently tracking
+				updateLocation(location); // update the location
+		} // end onLocationChanged
+
+		public void onProviderDisabled(String provider) {
+		} // end onProviderDisabled
+
+		public void onProviderEnabled(String provider) {
+		} // end onProviderEnabled
+
+		public void onStatusChanged(String provider, int status, Bundle extras) {
+		} // end onStatusChanged
+	}; // end locationListener
+
+	// determine whether we have GPS fix
+	GpsStatus.Listener gpsStatusListener = new GpsStatus.Listener() {
+		public void onGpsStatusChanged(int event) {
+			if (event == GpsStatus.GPS_EVENT_FIRST_FIX) {
+				gpsFix = true;
+				Location gps = locationManager
+						.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+				gpsStartPoint = new GeoPoint(gps.getLatitude(),
+						gps.getLongitude());
+				if (tracking) {
+					Toast results = Toast.makeText(MapActivity.this,
+							"Gpx Fix Available, Tracking Started",
+							Toast.LENGTH_SHORT);
+					// center the Toast in the screen
+					results.setGravity(Gravity.CENTER,
+							results.getXOffset() / 2, results.getYOffset() / 2);
+					results.show(); // display the results
+				}
+			} // end if
+		} // end method on GpsStatusChanged
+	}; // end anonymous inner class
 
 }

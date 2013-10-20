@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string-array name="vehicle_list_preference">
+        <item>Normal Taxi (Black Number Palte)</item>
+        <item>Tourist Taxi (Green Number Plate)</item>
+    </string-array>
+    <string-array name="vehiclevalues_list_preference">
+        <item>01</item>
+        <item>02</item>
+    </string-array>
+    
+
+</resources>

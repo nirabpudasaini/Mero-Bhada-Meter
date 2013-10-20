@@ -9,8 +9,8 @@
         android:id="@+id/textView1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/select_vechial"
-        android:textColor="#0404c9"
+        android:text="@string/select_vehicle"
+        android:textColor="#fcfcfc"
         android:textSize="19sp"
         android:textStyle="bold" />
 
@@ -18,12 +18,14 @@
         android:id="@+id/btn_tourist"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/tourist_taxi" />
+        android:text="@string/tourist_taxi"
+        android:textColor="#fcfcfc" />
 
     <Button
         android:id="@+id/btn_normal"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/normal_taxi" />
+        android:text="@string/normal_taxi"
+        android:textColor="#fcfcfc" />
 
 </LinearLayout>

@@ -11,7 +11,7 @@
         android:text="Your Fare Details:"
         android:gravity="center"
         android:textAppearance="?android:attr/textAppearanceLarge"
-        android:textColor="#0404c9" />
+        android:textColor="#fcfcfc" />
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -24,7 +24,7 @@
             android:layout_height="wrap_content"
             android:text="@string/distance"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#0404c9" />
+            android:textColor="#fcfcfc" />
 
         <TextView
             android:id="@+id/distance_value"
@@ -32,7 +32,7 @@
             android:layout_height="wrap_content"
             android:text="@string/distance_value"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#0404c9" />
+            android:textColor="#fcfcfc" />
     </LinearLayout>
 
     <LinearLayout
@@ -46,7 +46,7 @@
             android:layout_height="wrap_content"
             android:text="@string/rate"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#0404c9" />
+            android:textColor="#fcfcfc" />
 
         <TextView
             android:id="@+id/rate_value"
@@ -54,7 +54,7 @@
             android:layout_height="wrap_content"
             android:text="@string/rate_value"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#0404c9" />
+            android:textColor="#fcfcfc" />
     </LinearLayout>
 
     <LinearLayout
@@ -68,7 +68,7 @@
             android:layout_height="wrap_content"
             android:text="@string/fare"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#0404c9" />
+            android:textColor="#fcfcfc" />
 
         <TextView
             android:id="@+id/fare_value"
@@ -76,13 +76,14 @@
             android:layout_height="wrap_content"
             android:text="@string/fare_value"
             android:textAppearance="?android:attr/textAppearanceLarge"
-            android:textColor="#0404c9" />
+            android:textColor="#fcfcfc" />
     </LinearLayout>
 
     <Button
         android:id="@+id/btn_farepopoup_ok"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Ok" />
+        android:text="Ok"
+        android:textColor="#fcfcfc" />
 
 </LinearLayout>

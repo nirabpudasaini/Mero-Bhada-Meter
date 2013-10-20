@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+
+    <PreferenceCategory>
+        <ListPreference
+            android:entries="@array/vehicle_list_preference"
+            android:entryValues="@array/vehiclevalues_list_preference"
+            android:key="vehicle_list_preference"
+            android:summary="selcect the type of vehicle"
+            android:title="Vehicle Type" />
+
+        <CheckBoxPreference
+            android:key="offline_chkbox_preference"
+            android:summaryOff="You are using online maps"
+            android:summaryOn="You are using offline mode"
+            android:title="Offline Mode" />
+    </PreferenceCategory>
+
+</PreferenceScreen>
