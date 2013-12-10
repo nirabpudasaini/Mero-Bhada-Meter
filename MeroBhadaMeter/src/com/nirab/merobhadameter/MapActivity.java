@@ -1,6 +1,8 @@
 package com.nirab.merobhadameter;
 
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,6 +11,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.osmdroid.DefaultResourceProxyImpl;
 import org.osmdroid.api.IGeoPoint;
@@ -17,7 +21,8 @@ import org.osmdroid.bonuspack.overlays.ExtendedOverlayItem;
 import org.osmdroid.bonuspack.overlays.ItemizedOverlayWithBubble;
 import org.osmdroid.bonuspack.overlays.MapEventsOverlay;
 import org.osmdroid.bonuspack.overlays.MapEventsReceiver;
-import org.osmdroid.bonuspack.routing.OSRMRoadManager;
+import org.osmdroid.bonuspack.routing.GoogleRoadManager;
+//import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.bonuspack.routing.RoadNode;
@@ -30,7 +35,6 @@ import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.PathOverlay;
 import org.osmdroid.views.overlay.SimpleLocationOverlay;
 
-import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -58,6 +62,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.actionbarsherlock.app.SherlockActivity;
@@ -91,6 +96,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 	boolean tracking, offline_mode;
 
 	ProgressDialog mProgressDialog;
+	TextView faredisplay;
 
 	Double road_distance;
 	String vehicle_type;
@@ -111,6 +117,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		mc = mv.getController();
 		kathmandu = new GeoPoint(27.7167, 85.3667);
 		distanceTraveled = 0;
+		faredisplay = (TextView)findViewById(R.id.faredisplay);
 
 		// To use MapEventsReceiver methods, we add a MapEventsOverlay:
 		MapEventsOverlay overlay = new MapEventsOverlay(this, this);
@@ -120,10 +127,10 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		mv.getOverlays().add(gpsOverlay);
 
 		mProgressDialog = new ProgressDialog(MapActivity.this);
-		mProgressDialog.setMessage("Downloading, Please be Patince");
+		mProgressDialog.setMessage("Downloading, Please have Patience");
 		mProgressDialog.setIndeterminate(true);
 		mProgressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		mProgressDialog.setCancelable(true);
+		mProgressDialog.setCancelable(false);
 
 		locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 		locationManager.addGpsStatusListener(gpsStatusListener);
@@ -177,13 +184,14 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 			updateUIWithRoad(mRoad);
 		}
 
-		// on click handler for the destination search button
-		Button searchButton = (Button) findViewById(R.id.buttonSearch);
-		searchButton.setOnClickListener(new View.OnClickListener() {
-			public void onClick(View view) {
-				handleSearchLocationButton();
-			}
-		});
+		//TODO try add the search gunctionality using the action bar
+//		// on click handler for the destination search button
+//		Button searchButton = (Button) findViewById(R.id.buttonSearch);
+//		searchButton.setOnClickListener(new View.OnClickListener() {
+//			public void onClick(View view) {
+//				handleSearchLocationButton();
+//			}
+//		});
 
 		// register for the long press that brings the context menu, registered
 		// in the textview because mapview will also catch map drag events
@@ -197,6 +205,69 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		registerForContextMenu(mapb);
 
 	}
+	
+// TODO this is for geocoding address from the search button
+//	/**
+//	 * Geocoding of the destination address
+//	 */
+//	public void handleSearchLocationButton() {
+//		EditText destinationEdit = (EditText) findViewById(R.id.editDestination);
+//		// Hide the soft keyboard:
+//		InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+//		imm.hideSoftInputFromWindow(destinationEdit.getWindowToken(), 0);
+//
+//		String destinationAddress = destinationEdit.getText().toString();
+//		GeocoderNominatim geocoder = new GeocoderNominatim(this);
+//		geocoder.setOptions(true); // ask for enclosing polygon (if any)
+//		try {
+//			List<Address> foundAdresses = geocoder.getFromLocationName(
+//					destinationAddress, 1);
+//			if (foundAdresses.size() == 0) { // if no address found, display an
+//												// error
+//				Toast.makeText(this, "Address not found.", Toast.LENGTH_SHORT)
+//						.show();
+//			} else {
+//				Address address = foundAdresses.get(0); // get first address
+//				destinationPoint = new GeoPoint(address.getLatitude(),
+//						address.getLongitude());
+//				markerDestination = putMarkerItem(markerDestination,
+//						destinationPoint, DEST_INDEX, R.string.destination,
+//						R.drawable.marker_destination, -1);
+//				getRoadAsync();
+//				mc.setCenter(destinationPoint);
+//				// // get and display enclosing polygon:
+//				// Bundle extras = address.getExtras();
+//				// if (extras != null && extras.containsKey("polygonpoints")) {
+//				// ArrayList<GeoPoint> polygon = extras
+//				// .getParcelableArrayList("polygonpoints");
+//				// // Log.d("DEBUG", "polygon:"+polygon.size());
+//				// updateUIWithPolygon(polygon);
+//				// } else {
+//				// updateUIWithPolygon(null);
+//				// }
+//			}
+//		} catch (Exception e) {
+//			Toast.makeText(this, "Error preforming search", Toast.LENGTH_SHORT)
+//					.show();
+//		}
+//	}
+	
+	
+	
+	/**
+	 * callback to store activity status before a restart (orientation change
+	 * for instance)
+	 */
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		outState.putParcelable("start", startPoint);
+		outState.putParcelable("destination", destinationPoint);
+		outState.putParcelableArrayList("viapoints", viaPoints);
+		outState.putParcelable("road", mRoad);
+		outState.putInt("zoom_level", mv.getZoomLevel());
+		GeoPoint c = (GeoPoint) mv.getMapCenter();
+		outState.putParcelable("map_center", c);
+	}
 
 	@Override
 	protected void onStart() {
@@ -204,7 +275,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		//TODO
 		offline_mode = preferences.getBoolean("offline_chkbox_preference", false);
 		if (offline_mode){
-			Intent offlineMap = new Intent(MapActivity.this, OfflineMapActivity.class);
+			Intent offlineMap = new Intent(this, OfflineMapActivity.class);
 			startActivity(offlineMap);
 		}
 		// get the app's power manager
@@ -292,50 +363,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		}
 	}
 
-	/**
-	 * Geocoding of the destination address
-	 */
-	public void handleSearchLocationButton() {
-		EditText destinationEdit = (EditText) findViewById(R.id.editDestination);
-		// Hide the soft keyboard:
-		InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-		imm.hideSoftInputFromWindow(destinationEdit.getWindowToken(), 0);
 
-		String destinationAddress = destinationEdit.getText().toString();
-		GeocoderNominatim geocoder = new GeocoderNominatim(this);
-		geocoder.setOptions(true); // ask for enclosing polygon (if any)
-		try {
-			List<Address> foundAdresses = geocoder.getFromLocationName(
-					destinationAddress, 1);
-			if (foundAdresses.size() == 0) { // if no address found, display an
-												// error
-				Toast.makeText(this, "Address not found.", Toast.LENGTH_SHORT)
-						.show();
-			} else {
-				Address address = foundAdresses.get(0); // get first address
-				destinationPoint = new GeoPoint(address.getLatitude(),
-						address.getLongitude());
-				markerDestination = putMarkerItem(markerDestination,
-						destinationPoint, DEST_INDEX, R.string.destination,
-						R.drawable.marker_destination, -1);
-				getRoadAsync();
-				mc.setCenter(destinationPoint);
-				// // get and display enclosing polygon:
-				// Bundle extras = address.getExtras();
-				// if (extras != null && extras.containsKey("polygonpoints")) {
-				// ArrayList<GeoPoint> polygon = extras
-				// .getParcelableArrayList("polygonpoints");
-				// // Log.d("DEBUG", "polygon:"+polygon.size());
-				// updateUIWithPolygon(polygon);
-				// } else {
-				// updateUIWithPolygon(null);
-				// }
-			}
-		} catch (Exception e) {
-			Toast.makeText(this, "Error preforming search", Toast.LENGTH_SHORT)
-					.show();
-		}
-	}
 
 	public void removePoint(int index) {
 		if (index == START_INDEX)
@@ -424,7 +452,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 			@SuppressWarnings("unchecked")
 			ArrayList<GeoPoint> waypoints = (ArrayList<GeoPoint>) params[0];
 			RoadManager roadManager = null;
-			roadManager = new OSRMRoadManager();
+			roadManager = new GoogleRoadManager();
 			return roadManager.getRoad(waypoints);
 		}
 
@@ -475,51 +503,16 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		//TODO
 		road_distance = road.mLength;
 		vehicle_type = preferences.getString("vehicle_list_preference", "01");
-		Fare taxifare = new Fare(road_distance, vehicle_type);
+		Fare fare = new Fare(this, road_distance, "01");
+		fare.calculate();
+		fare.show();
 		
 		
 		
-//
-//		if (taxi_type.equals("normal")) {
-//			double fare = (road.mLength * rateperkm) + 10;
-//			fv = String.valueOf(fare);
-//		}
-//
-//		if (taxi_type.equals("tourist")) {
-//			if (road.mLength < 5.00) {
-//				fv = String.valueOf(rateperkm);
-//			} else {
-//				double fare = ((road.mLength - 5) * waitingcharge + rateperkm);
-//				if (fare > maxrate) {
-//					fare = maxrate;
-//				}
-//				fv = String.valueOf(fare);
-//			}
-//		}
-//
-//		Log.i("distance value", dv);
-//		Log.i("rate value", rv);
-//		Log.i("fare value", fv);
-//		showFare();
 
-		// fare_value.setText(fv);
-		// distance_value.setText(dv);
-		// rate_value.setText(rv);
-		// d.show();
 
 	}
 
-	
-	//TODO this method is unnecessary, this must be done in calculatefare class
-//	public void showFare() {
-//		Intent popup = new Intent(MapActivity.this, FarePopUp.class);
-//		Bundle popup_bundle = new Bundle();
-//		popup_bundle.putString("distance_value", dv);
-//		popup_bundle.putString("rate_value", rv);
-//		popup_bundle.putString("fare_value", fv);
-//		popup.putExtras(popup_bundle);
-//		startActivity(popup);
-//	}
 
 	private void putRoadNodes(Road road) {
 		roadNodeMarkers.removeAllItems();
@@ -609,24 +602,18 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 
 				double totalHours = milliseconds / MILLISECONDS_PER_HOUR;
 
-				// create a dialog displaying the results
 
-				AlertDialog.Builder dialogBuilder =
-
-				new AlertDialog.Builder(MapActivity.this);
-				dialogBuilder.setTitle("Fare Value");
 
 				double distanceKM = distanceTraveled / 1000.0;
 				double totalMins = totalHours * 60;
+				
+				Fare fare = new Fare(this, distanceKM, "01");
+				fare.calculate();
+				fare.show();
 
-				// display distanceTraveled traveled and average speed
-				dialogBuilder.setMessage(String.format(
-						"You travelled %f Kilometers in %f minutes",
-						distanceKM, totalMins));
-				dialogBuilder.setPositiveButton("Ok", null);
-				dialogBuilder.show(); // display the dialog
+
 				tracking = false;
-				item.setTitle("Strat Tracking");
+				item.setTitle("Start Tracking");
 				mapb.setEnabled(true);
 
 			} else {
@@ -634,7 +621,6 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 				tracking = true;
 				mapb.setEnabled(false);
 				startTime = System.currentTimeMillis(); // get current time
-
 				mv.invalidate(); // clear the route
 				distanceTraveled = 0;
 				previousLocation = null; // starting a new route
@@ -654,7 +640,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 
 			final DownloadTask downloadTask = new DownloadTask(MapActivity.this);
 			downloadTask
-					.execute("https://dl.dropboxusercontent.com/u/95497883/kathmandu-2013-8-12.map");
+					.execute("https://dl.dropboxusercontent.com/u/95497883/kathmandu-gh.zip");
 
 			mProgressDialog
 					.setOnCancelListener(new DialogInterface.OnCancelListener() {
@@ -663,6 +649,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 							downloadTask.cancel(true);
 						}
 					});
+
 
 		}
 
@@ -705,13 +692,11 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 								+ connection.getResponseCode() + " "
 								+ connection.getResponseMessage();
 
-					// TODO
 
-					File file = new File(Environment
-							.getExternalStorageDirectory().getPath()
-							+ "/kathmandu.map");
+					File filecheck = new File(Environment
+							.getExternalStorageDirectory().getPath()+"/merobhadameter/maps/kathmandu-gh/kathmandu.map");
 
-					if (file.exists()) {
+					if (filecheck.exists()) {
 						Log.i("File Exists", "Code Gets here, file exists");
 						return "exists";
 						// if (connection.getResponseCode() ==
@@ -729,8 +714,8 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 					// download the file
 					input = connection.getInputStream();
 					output = new FileOutputStream(Environment
-							.getExternalStorageDirectory().getPath()
-							+ "/kathmandu.map");
+							.getExternalStorageDirectory().getPath()+"/merobhadameter/maps"
+							+ "/kathmandu-gh.zip");
 
 					byte data[] = new byte[4096];
 					long total = 0;
@@ -797,16 +782,71 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 			else {
 				Toast.makeText(context, "File downloaded", Toast.LENGTH_SHORT)
 						.show();
+				unpackZip(Environment
+						.getExternalStorageDirectory().getPath()+ "/merobhadameter/maps/"
+						, "kathmandu-gh.zip");
 			}
 		}
 	}
 
+	//To unzip files
+	
+	private boolean unpackZip(String path, String zipname)
+	{       
+	     InputStream is;
+	     ZipInputStream zis;
+	     try 
+	     {
+	         String filename;
+	         is = new FileInputStream(path + zipname);
+	         zis = new ZipInputStream(new BufferedInputStream(is));          
+	         ZipEntry ze;
+	         byte[] buffer = new byte[1024];
+	         int count;
+
+	         while ((ze = zis.getNextEntry()) != null) 
+	         {
+	             
+	             filename = ze.getName();
+
+	             // Need to create directories if not exists, or
+	             // it will generate an Exception...
+	             if (ze.isDirectory()) {
+	                File fmd = new File(path + filename);
+	                fmd.mkdirs();
+	                continue;
+	             }
+
+	             FileOutputStream fout = new FileOutputStream(path + filename);
+
+	             
+	             while ((count = zis.read(buffer)) != -1) 
+	             {
+	                 fout.write(buffer, 0, count);             
+	             }
+
+	             fout.close();               
+	             zis.closeEntry();
+	         }
+
+	         zis.close();
+	     } 
+	     catch(IOException e)
+	     {
+	         e.printStackTrace();
+	         return false;
+	     }
+
+	    return true;
+	}
+	
+	
+	
+	
 	// update location on map
 	public void updateLocation(Location location) {
-		if (location != null && gpsFix) // location not null; have GPS fix
+		if (location != null && gpsFix) 
 		{
-			// add the given Location to the route
-
 			markerStart = putMarkerItem(markerStart, gpsStartPoint,
 					START_INDEX, R.string.departure,
 					R.drawable.marker_departure, -1);
@@ -815,12 +855,18 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 					R.drawable.marker_destination, -1);
 			getRoadAsync();
 
-			// if there is a previous location
+
 			if (previousLocation != null) {
-				// add to the total distanceTraveled
+				
 				distanceTraveled += location.distanceTo(previousLocation);
-			} // end if
-				// get the latitude and longitude
+				Fare realtime_fare = new Fare(this, distanceTraveled/1000.0, "01");
+				realtime_fare.calculate();
+				int rupees, paisa;
+				rupees = realtime_fare.getRupees();
+				paisa = realtime_fare.getPaisa();
+				faredisplay.setText(String.format("Fare Value: Rs %d . %d", rupees, paisa));
+			} 
+			
 			Double latitude = location.getLatitude() * 1E6;
 			Double longitude = location.getLongitude() * 1E6;
 			// create GeoPoint representing the given Locations
@@ -832,7 +878,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		} // end if
 
 		previousLocation = location;
-	} // end method updateLocation
+	} 
 
 	// responds to events from the LocationManager
 	private final LocationListener locationListener = new LocationListener() {

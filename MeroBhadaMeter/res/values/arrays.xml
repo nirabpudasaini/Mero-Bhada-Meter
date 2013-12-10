@@ -2,7 +2,7 @@
 <resources>
 
     <string-array name="vehicle_list_preference">
-        <item>Normal Taxi (Black Number Palte)</item>
+        <item>Normal Taxi (Black Number Plate)</item>
         <item>Tourist Taxi (Green Number Plate)</item>
     </string-array>
     <string-array name="vehiclevalues_list_preference">

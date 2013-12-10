@@ -1,6 +1,9 @@
 package com.nirab.merobhadameter;
 
+import java.io.File;
+
 import android.os.Bundle;
+import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.app.Activity;
 //import android.view.Menu;
@@ -11,6 +14,7 @@ public class MainActivity extends Activity {
 
 	SharedPreferences preferences;
 	boolean offline_mode;
+	private String mapsFolder;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -20,7 +24,13 @@ public class MainActivity extends Activity {
 		Thread timer = new Thread(){
 			public void run(){
 				try{
-					sleep(2000);
+			        mapsFolder = Environment.getExternalStorageDirectory()
+			                .getAbsolutePath() + "/merobhadameter/maps/";
+			        if (!new File(mapsFolder).exists())
+			        {
+			            new File(mapsFolder).mkdirs();
+			        }
+					sleep(1000);
 				}
 				catch(InterruptedException e){
 					e.printStackTrace();

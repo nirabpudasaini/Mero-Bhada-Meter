@@ -6,7 +6,7 @@
             android:entries="@array/vehicle_list_preference"
             android:entryValues="@array/vehiclevalues_list_preference"
             android:key="vehicle_list_preference"
-            android:summary="selcect the type of vehicle"
+            android:summary="select the type of vehicle"
             android:title="Vehicle Type" />
 
         <CheckBoxPreference
