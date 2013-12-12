@@ -11,7 +11,7 @@ import android.view.MotionEvent;
 public class CustomMapView extends MapView {
 
 	
-	private GestureDetectorCompat mDetector;
+	private GestureDetector gd;
 	
 	public CustomMapView(Context context){
 		super(context);
@@ -20,26 +20,29 @@ public class CustomMapView extends MapView {
 	public CustomMapView(Context context, AttributeSet attributeSet) {
 		super(context, attributeSet);
 		// TODO Auto-generated constructor stub
+		gd = new GestureDetector(context, sogl);
 		
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent motionEvent) {
 		// TODO Auto-generated method stub
-		return super.onTouchEvent(motionEvent);
-		
+		if (gd.onTouchEvent(motionEvent))
+	        return true;
+	    return super.onTouchEvent(motionEvent);
+
 		
 	}
 	
-	class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+	
+	GestureDetector.SimpleOnGestureListener sogl =
+            new GestureDetector.SimpleOnGestureListener() {
 
-		@Override
-		public void onLongPress(MotionEvent e) {
-			// TODO Auto-generated method stub
-			super.onLongPress(e);
-		}
-		
-	}
+  
+    public void onLongPress(MotionEvent event) {
+        
+    }
+};
 
 
 
