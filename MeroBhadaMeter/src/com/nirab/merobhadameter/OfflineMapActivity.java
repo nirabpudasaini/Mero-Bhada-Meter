@@ -301,12 +301,7 @@ public class OfflineMapActivity extends SherlockActivity {
 		case R.id.action_track:
 			if (tracking) {
 
-				// check for gps settings
-				if (locationManager
-						.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-					buildAlertMessageNoGps();
-					return true;
-				}
+				
 
 				// compute the total time we were tracking
 
@@ -325,6 +320,13 @@ public class OfflineMapActivity extends SherlockActivity {
 				// mapb.setEnabled(true);
 
 			} else {
+				// check for gps settings
+				if (!locationManager
+						.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+					buildAlertMessageNoGps();
+					return true;
+				}
+				
 				item.setTitle("Stop Tracking");
 				tracking = true;
 				// mapb.setEnabled(false);

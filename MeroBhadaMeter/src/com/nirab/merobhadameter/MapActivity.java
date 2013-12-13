@@ -597,12 +597,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 
 			if (tracking) {
 				
-				//check if gps is enabled
-				if (locationManager
-						.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
-					buildAlertMessageNoGps();
-					return true;
-				}
+				
 
 				// compute the total time we were tracking
 
@@ -625,6 +620,13 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 				mapb.setEnabled(true);
 
 			} else {
+				
+				//check if gps is enabled
+				if (!locationManager
+						.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+					buildAlertMessageNoGps();
+					return true;
+				}
 				item.setTitle("Stop Tracking");
 				tracking = true;
 				mapb.setEnabled(false);
