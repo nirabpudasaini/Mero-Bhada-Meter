@@ -20,6 +20,8 @@ import org.mapsforge.map.layer.overlay.Polyline;
 import org.mapsforge.map.model.MapViewPosition;
 import org.mapsforge.map.model.common.PreferencesFacade;
 
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
@@ -215,25 +217,23 @@ public class OfflineMapActivity extends SherlockActivity {
 					this,
 					"No Offline Map File Present. Please Download it by Clicking Download in the Menu",
 					Toast.LENGTH_LONG).show();
-			editor.putBoolean("offline_chkbox_preference",
-					false);
+			editor.putBoolean("offline_chkbox_preference", false);
 			editor.apply();
 			Intent Map = new Intent(this, MapActivity.class);
 			startActivity(Map);
 			finish();
 		}
-		
-		
-//		GraphHopper gh = new GraphHopper().forMobile();
-//		gh.setCHShortcuts(true, true);
-//		gh.load(Environment.getExternalStorageDirectory()
-//				+ "/merobhadameter/maps/kathmandu-gh/");
-//
-//		GHRequest request = new GHRequest(27.707, 85.315, 27.710, 85.325);
-//		request.setAlgorithm("dijkstrabi");
-//		GHResponse response = gh.route(request);
-//		String gh_value = String.valueOf(response);
-//		Log.i("What GraphHopper API Response", gh_value);
+
+		// GraphHopper gh = new GraphHopper().forMobile();
+		// gh.setCHShortcuts(true, true);
+		// gh.load(Environment.getExternalStorageDirectory()
+		// + "/merobhadameter/maps/kathmandu-gh/");
+		//
+		// GHRequest request = new GHRequest(27.707, 85.315, 27.710, 85.325);
+		// request.setAlgorithm("dijkstrabi");
+		// GHResponse response = gh.route(request);
+		// String gh_value = String.valueOf(response);
+		// Log.i("What GraphHopper API Response", gh_value);
 
 		SharedPreferences sharedPreferences = this.getSharedPreferences(
 				getPersistableId(), MODE_PRIVATE);
@@ -247,9 +247,9 @@ public class OfflineMapActivity extends SherlockActivity {
 		locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER,
 				1000, 20, locationListener);
 		faredisplay = (TextView) findViewById(R.id.faredisplay_offline);
-		Typeface face=Typeface.createFromAsset(getAssets(),
-                "fonts/led-real-regular.ttf");
-		faredisplay.setTypeface(face,1);
+		Typeface face = Typeface.createFromAsset(getAssets(),
+				"fonts/led-real-regular.ttf");
+		faredisplay.setTypeface(face, 1);
 
 	}
 
@@ -300,6 +300,13 @@ public class OfflineMapActivity extends SherlockActivity {
 		switch (item.getItemId()) {
 		case R.id.action_track:
 			if (tracking) {
+
+				// check for gps settings
+				if (locationManager
+						.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+					buildAlertMessageNoGps();
+					return true;
+				}
 
 				// compute the total time we were tracking
 
@@ -362,6 +369,30 @@ public class OfflineMapActivity extends SherlockActivity {
 		return new LatLong(location.getLatitude(), location.getLongitude());
 	}
 
+	// Alert dialog to propmt user to enable gps
+	private void buildAlertMessageNoGps() {
+		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(
+				"Your GPS seems to be disabled, do you want to enable it?")
+				.setCancelable(false)
+				.setPositiveButton("Yes",
+						new DialogInterface.OnClickListener() {
+							public void onClick(final DialogInterface dialog,
+									final int id) {
+								startActivity(new Intent(
+										android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+							}
+						})
+				.setNegativeButton("No", new DialogInterface.OnClickListener() {
+					public void onClick(final DialogInterface dialog,
+							final int id) {
+						dialog.cancel();
+					}
+				});
+		final AlertDialog alert = builder.create();
+		alert.show();
+	}
+
 	// update location on map
 	public void updateLocation(Location location) {
 		if (location != null && gpsFix) // location not null; have GPS fix
@@ -371,7 +402,6 @@ public class OfflineMapActivity extends SherlockActivity {
 			marker_start.setLatLong(gpsStartPoint);
 			marker_destination.setLatLong(gpsEndPoint);
 			latLongs_track.clear();
-
 
 			GraphHopper gh = new GraphHopper().forMobile();
 			gh.setCHShortcuts(true, true);
@@ -397,14 +427,15 @@ public class OfflineMapActivity extends SherlockActivity {
 			if (previousLocation != null) {
 
 				distanceTraveled += location.distanceTo(previousLocation);
-				Fare realtime_fare = new Fare(this, distanceTraveled/1000.0, "01");
+				Fare realtime_fare = new Fare(this, distanceTraveled / 1000.0,
+						"01");
 				realtime_fare.calculate();
 				int rupees, paisa;
 				rupees = realtime_fare.getRupees();
 				paisa = realtime_fare.getPaisa();
-				faredisplay.setText(String.format("Fare Value: Rs %d . %d", rupees, paisa));
-				
-				
+				faredisplay.setText(String.format("Fare Value: Rs %d . %d",
+						rupees, paisa));
+
 			} else {
 
 				gpsStartPoint = locationToLatLong(location);

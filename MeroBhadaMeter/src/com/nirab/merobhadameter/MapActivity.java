@@ -35,6 +35,7 @@ import org.osmdroid.views.overlay.OverlayItem;
 import org.osmdroid.views.overlay.PathOverlay;
 import org.osmdroid.views.overlay.SimpleLocationOverlay;
 
+import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -595,6 +596,13 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		case R.id.action_track:
 
 			if (tracking) {
+				
+				//check if gps is enabled
+				if (locationManager
+						.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+					buildAlertMessageNoGps();
+					return true;
+				}
 
 				// compute the total time we were tracking
 
@@ -654,6 +662,30 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		}
 
 		return super.onOptionsItemSelected(item);
+	}
+	
+	// Alert dialog to propmt user to enable gps
+	private void buildAlertMessageNoGps() {
+		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(
+				"Your GPS seems to be disabled, do you want to enable it?")
+				.setCancelable(false)
+				.setPositiveButton("Yes",
+						new DialogInterface.OnClickListener() {
+							public void onClick(final DialogInterface dialog,
+									final int id) {
+								startActivity(new Intent(
+										android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+							}
+						})
+				.setNegativeButton("No", new DialogInterface.OnClickListener() {
+					public void onClick(final DialogInterface dialog,
+							final int id) {
+						dialog.cancel();
+					}
+				});
+		final AlertDialog alert = builder.create();
+		alert.show();
 	}
 
 	// AsyncTask to download a file
