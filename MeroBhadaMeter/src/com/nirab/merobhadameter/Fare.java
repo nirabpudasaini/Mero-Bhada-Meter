@@ -59,19 +59,23 @@ public class Fare {
 		int paisa = (int) ((totalfare % 1) * 100);
 		return paisa;
 	}
+	
+	public double getFlagdownRate(){
+		return flagdown;
+	}
 
 	public void show() {
 
 		AlertDialog.Builder dialogBuilder =
 
 		new AlertDialog.Builder(context);
-		dialogBuilder.setTitle("Total Fare Value");
+		dialogBuilder.setTitle("Fare Summary");
 		int rupees = (int) totalfare;
 		int paisa = (int) ((totalfare % 1) * 100);
 
 		dialogBuilder
 				.setMessage(String
-						.format("Total distance is %f Kilometers and your total charge is %d rupees and %d paisa",
+						.format("Total distance: %.02f Kilometers /n Total Fare: %d Rupees and %d Paisa",
 								distance_road, rupees, paisa));
 		dialogBuilder.setPositiveButton("Ok", null);
 		dialogBuilder.show(); // display the dialog

@@ -6,13 +6,13 @@
             android:entries="@array/vehicle_list_preference"
             android:entryValues="@array/vehiclevalues_list_preference"
             android:key="vehicle_list_preference"
-            android:summary="select the type of vehicle"
+            android:summary="Select the type of vehicle"
             android:title="Vehicle Type" />
 
         <CheckBoxPreference
             android:key="offline_chkbox_preference"
-            android:summaryOff="You are using online maps"
-            android:summaryOn="You are using offline mode"
+            android:summaryOff="You are using the app in online mode"
+            android:summaryOn="You are using the app in offline mode"
             android:title="Offline Mode" />
     </PreferenceCategory>
 

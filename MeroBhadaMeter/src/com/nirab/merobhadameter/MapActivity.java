@@ -628,6 +628,8 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 					return true;
 				}
 				item.setTitle("Stop Tracking");
+				//TODO make this change to the flagdown of the currently running fare
+				faredisplay.setText("Fare Amount: Rs 14 . 00");
 				tracking = true;
 				mapb.setEnabled(false);
 				startTime = System.currentTimeMillis(); // get current time
@@ -670,9 +672,9 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 	private void buildAlertMessageNoGps() {
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(
-				"Your GPS seems to be disabled, do you want to enable it?")
+				"Your GPS seems to be disabled, Please enable it to start tracking")
 				.setCancelable(false)
-				.setPositiveButton("Yes",
+				.setPositiveButton("Ok",
 						new DialogInterface.OnClickListener() {
 							public void onClick(final DialogInterface dialog,
 									final int id) {
@@ -898,7 +900,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 				int rupees, paisa;
 				rupees = realtime_fare.getRupees();
 				paisa = realtime_fare.getPaisa();
-				faredisplay.setText(String.format("Fare Value: Rs %d . %d", rupees, paisa));
+				faredisplay.setText(String.format("Fare Amount: Rs %d . %d", rupees, paisa));
 			} 
 			
 			Double latitude = location.getLatitude() * 1E6;

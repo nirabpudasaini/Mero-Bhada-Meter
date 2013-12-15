@@ -317,6 +317,7 @@ public class OfflineMapActivity extends SherlockActivity {
 
 				tracking = false;
 				item.setTitle("Strat Tracking");
+				
 				// mapb.setEnabled(true);
 
 			} else {
@@ -330,6 +331,8 @@ public class OfflineMapActivity extends SherlockActivity {
 				item.setTitle("Stop Tracking");
 				tracking = true;
 				// mapb.setEnabled(false);
+				//TODO make this change to the flagdown of the currently running fare
+				faredisplay.setText("Fare Amount: Rs 14 . 00");
 				startTime = System.currentTimeMillis(); // get current time
 				mapView.invalidate();// clear the route
 				distanceTraveled = 0;
@@ -375,9 +378,9 @@ public class OfflineMapActivity extends SherlockActivity {
 	private void buildAlertMessageNoGps() {
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(
-				"Your GPS seems to be disabled, do you want to enable it?")
+				"Your GPS seems to be disabled, Please enable it to start tracking")
 				.setCancelable(false)
-				.setPositiveButton("Yes",
+				.setPositiveButton("Ok",
 						new DialogInterface.OnClickListener() {
 							public void onClick(final DialogInterface dialog,
 									final int id) {
@@ -435,7 +438,7 @@ public class OfflineMapActivity extends SherlockActivity {
 				int rupees, paisa;
 				rupees = realtime_fare.getRupees();
 				paisa = realtime_fare.getPaisa();
-				faredisplay.setText(String.format("Fare Value: Rs %d . %d",
+				faredisplay.setText(String.format("Fare Amount: Rs %d . %d",
 						rupees, paisa));
 
 			} else {
