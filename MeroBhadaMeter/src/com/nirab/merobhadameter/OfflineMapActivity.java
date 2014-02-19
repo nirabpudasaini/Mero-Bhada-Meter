@@ -1,6 +1,7 @@
 package com.nirab.merobhadameter;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.mapsforge.core.graphics.Bitmap;
@@ -8,22 +9,34 @@ import org.mapsforge.core.graphics.Color;
 import org.mapsforge.core.graphics.Style;
 import org.mapsforge.core.model.LatLong;
 import org.mapsforge.core.model.MapPosition;
+import org.mapsforge.core.model.Point;
 import org.mapsforge.map.android.AndroidPreferences;
 import org.mapsforge.map.android.graphics.AndroidGraphicFactory;
 import org.mapsforge.map.android.layer.MyLocationOverlay;
+import org.mapsforge.map.android.util.AndroidUtil;
 import org.mapsforge.map.android.view.MapView;
+import org.mapsforge.map.layer.Layer;
 import org.mapsforge.map.layer.LayerManager;
 import org.mapsforge.map.layer.Layers;
 import org.mapsforge.map.layer.cache.TileCache;
 import org.mapsforge.map.layer.overlay.Marker;
 import org.mapsforge.map.layer.overlay.Polyline;
+import org.mapsforge.map.layer.renderer.TileRendererLayer;
+import org.mapsforge.map.model.DisplayModel;
 import org.mapsforge.map.model.MapViewPosition;
 import org.mapsforge.map.model.common.PreferencesFacade;
+import org.mapsforge.map.reader.MapDatabase;
+import org.mapsforge.map.reader.header.FileOpenResult;
+import org.mapsforge.map.reader.header.MapFileInfo;
+import org.mapsforge.map.rendertheme.InternalRenderTheme;
+import org.mapsforge.map.rendertheme.XmlRenderTheme;
 
+import android.annotation.SuppressLint;
 import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.location.GpsStatus;
@@ -34,8 +47,12 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.ContextMenu;
 import android.view.Gravity;
-import android.widget.Button;
+import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.ContextMenu.ContextMenuInfo;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -45,18 +62,30 @@ import com.graphhopper.GHResponse;
 import com.graphhopper.GraphHopper;
 import com.graphhopper.util.PointList;
 
-public class OfflineMapActivity extends SherlockActivity {
-
-	protected MapView mapView;
+/**
+ * A simple application which demonstrates how to use a MapView.
+ */
+public class OfflineMapActivity extends SherlockActivity implements
+		OnSharedPreferenceChangeListener {
+	protected static final int DIALOG_ENTER_COORDINATES = 2923878;
+	protected ArrayList<LayerManager> layerManagers = new ArrayList<LayerManager>();
+	protected ArrayList<MapViewPosition> mapViewPositions = new ArrayList<MapViewPosition>();
+	protected ArrayList<MapView> mapViews = new ArrayList<MapView>();
 	protected PreferencesFacade preferencesFacade;
-	protected TileCache tileCache;
-	protected MapViewPosition mapViewPosition;
-	protected Marker marker_start, marker_destination;
+	protected SharedPreferences sharedPreferences;
+
+	protected Marker marker_start, marker_destination,marker_set_start, marker_set_destination;
 	protected Polyline polyline_track;
 	protected List<LatLong> latLongs_track;
 
+	protected TileCache tileCache;
+
+	TextView faredisplay;
+
 	protected LatLong gpsStartPoint = new LatLong(0, 0);
 	protected LatLong gpsEndPoint = new LatLong(0, 0);
+	protected LatLong tmpClickedPoint = new LatLong(0, 0);
+	protected LatLong departurePoint, destinationPoint;
 	private MyLocationOverlay myLocationOverlay;
 	private LocationManager locationManager;
 	private Location previousLocation;
@@ -66,36 +95,38 @@ public class OfflineMapActivity extends SherlockActivity {
 	private long startTime;
 	private static final double MILLISECONDS_PER_HOUR = 1000 * 60 * 60;
 	protected Boolean tracking, offline_mode;
-	SharedPreferences preferences;
-	Button mapb;
-	TextView faredisplay;
 
-	protected void addLayers(LayerManager layerManager, TileCache tileCache,
-			MapViewPosition mapViewPosition) {
-		layerManager.getLayers().add(
-				Utils.createTileRendererLayer(tileCache, mapViewPosition,
-						getMapFile()));
-
-		Drawable drawable_currentpos = getResources().getDrawable(
-				R.drawable.person);
-		Bitmap bitmap_currentpos = AndroidGraphicFactory
-				.convertToBitmap(drawable_currentpos);
-
-		this.myLocationOverlay = new MyLocationOverlay(this, mapViewPosition,
-				bitmap_currentpos);
-
-		layerManager.getLayers().add(this.myLocationOverlay);
-		addOverlayLayers(layerManager.getLayers());
+	@Override
+	public void onSharedPreferenceChanged(SharedPreferences preferences,
+			String key) {
+		if (SamplesApplication.SETTING_SCALE.equals(key)) {
+			destroyTileCaches();
+			for (MapView mapView : mapViews) {
+				mapView.getModel().displayModel.setUserScaleFactor(DisplayModel
+						.getDefaultUserScaleFactor());
+			}
+			Log.d(SamplesApplication.TAG, "Tilesize now "
+					+ mapViews.get(0).getModel().displayModel.getTileSize());
+			createTileCaches();
+			redrawLayers();
+		}
 	}
-
+	
 	protected void addOverlayLayers(Layers layers) {
 		marker_start = Utils.createMarker(this, R.drawable.marker_departure,
 				gpsStartPoint);
 		marker_destination = Utils.createMarker(this,
 				R.drawable.marker_destination, gpsEndPoint);
+		marker_set_start = Utils.createTappableMarker(this,
+				R.drawable.marker_departure,departurePoint);
+		marker_set_destination = Utils.createTappableMarker(this,
+				R.drawable.marker_destination,destinationPoint);
+		
 
 		layers.add(marker_start);
 		layers.add(marker_destination);
+		layers.add(marker_set_start);
+		layers.add(marker_set_destination);
 
 		polyline_track = new Polyline(Utils.createPaint(
 				AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE), 8,
@@ -106,27 +137,129 @@ public class OfflineMapActivity extends SherlockActivity {
 
 	}
 
-	protected TileCache createTileCache() {
-		return Utils.createExternalStorageTileCache(this, getPersistableId());
+	protected void createControls() {
+		// time to create control elements
+	}
+
+	protected void createLayerManagers() {
+		for (MapView mapView : mapViews) {
+			this.layerManagers.add(mapView.getLayerManager());
+		}
+	}
+
+	protected void createLayers() {
+		TileRendererLayer tileRendererLayer = new TileRendererLayer(
+				this.tileCache,
+				this.mapViewPositions.get(0),
+				false,
+				org.mapsforge.map.android.graphics.AndroidGraphicFactory.INSTANCE) {
+			@Override
+			public boolean onLongPress(LatLong tapLatLong, Point thisXY,
+					Point tapXY) {
+				OfflineMapActivity.this.onLongPress(tapLatLong);
+				return true;
+			}
+		};
+		tileRendererLayer.setMapFile(this.getMapFile());
+		tileRendererLayer.setXmlRenderTheme(this.getRenderTheme());
+		this.layerManagers.get(0).getLayers().add(tileRendererLayer);
+
+		// a marker to show at the position
+		Drawable drawable = getResources().getDrawable(R.drawable.taxi_icon1);
+		Bitmap bitmap = AndroidGraphicFactory.convertToBitmap(drawable);
+
+		// create the overlay and tell it to follow the location
+		this.myLocationOverlay = new MyLocationOverlay(this,
+				this.mapViewPositions.get(0), bitmap);
+		this.myLocationOverlay.setSnapToLocationEnabled(true);
+		this.layerManagers.get(0).getLayers().add(this.myLocationOverlay);
+		
+		addOverlayLayers(layerManagers.get(0).getLayers());
+	}
+
+	protected void createMapViewPositions() {
+		for (MapView mapView : mapViews) {
+			this.mapViewPositions
+					.add(initializePosition(mapView.getModel().mapViewPosition));
+		}
+	}
+
+	protected void createMapViews() {
+		MapView mapView = getMapView();
+		mapView.getModel().init(this.preferencesFacade);
+		mapView.setClickable(true);
+		mapView.getMapScaleBar().setVisible(true);
+		mapView.setBuiltInZoomControls(hasZoomControls());
+		mapView.getMapZoomControls().setZoomLevelMin((byte) 10);
+		mapView.getMapZoomControls().setZoomLevelMax((byte) 20);
+		registerForContextMenu(mapView);
+		this.mapViews.add(mapView);
+	}
+
+	protected void createSharedPreferences() {
+		SharedPreferences sp = this.getSharedPreferences(getPersistableId(),
+				MODE_PRIVATE);
+		this.preferencesFacade = new AndroidPreferences(sp);
+	}
+
+	protected void createTileCaches() {
+		this.tileCache = AndroidUtil.createTileCache(this, getPersistableId(),
+				this.mapViews.get(0).getModel().displayModel.getTileSize(),
+				this.getScreenRatio(),
+				this.mapViews.get(0).getModel().frameBufferModel
+						.getOverdrawFactor());
+	}
+
+	protected void destroyLayers() {
+		for (LayerManager layerManager : this.layerManagers) {
+			for (Layer layer : layerManager.getLayers()) {
+				layerManager.getLayers().remove(layer);
+				layer.onDestroy();
+			}
+		}
+	}
+
+	protected void destroyMapViewPositions() {
+		for (MapViewPosition mapViewPosition : mapViewPositions) {
+			mapViewPosition.destroy();
+		}
+	}
+
+	protected void destroyMapViews() {
+		for (MapView mapView : mapViews) {
+			mapView.destroy();
+		}
+	}
+
+	protected void destroyTileCaches() {
+		this.tileCache.destroy();
 	}
 
 	protected MapPosition getInitialPosition() {
-		return new MapPosition(new LatLong(27.707, 85.315), (byte) 16);
-	}
-
-	/**
-	 * @return the layout to be used
-	 */
-	protected int getLayoutId() {
-		return R.layout.offlinemap;
+		MapDatabase mapDatabase = new MapDatabase();
+		final FileOpenResult result = mapDatabase.openFile(getMapFile());
+		if (result.isSuccess()) {
+			final MapFileInfo mapFileInfo = mapDatabase.getMapFileInfo();
+			if (mapFileInfo != null && mapFileInfo.startPosition != null) {
+				return new MapPosition(mapFileInfo.startPosition,
+						(byte) mapFileInfo.startZoomLevel);
+			} else {
+				return new MapPosition(new LatLong(27.517037, 85.38886),
+						(byte) 12);
+			}
+		}
+		throw new IllegalArgumentException("Invalid Map File "
+				+ getMapFileName());
 	}
 
 	/**
 	 * @return a map file
 	 */
 	protected File getMapFile() {
-		return new File(Environment.getExternalStorageDirectory()
+		File file = new File(Environment.getExternalStorageDirectory()
 				+ "/merobhadameter/maps/kathmandu-gh/", this.getMapFileName());
+		Log.i(SamplesApplication.TAG, "Map file is " + file.getAbsolutePath());
+		return file;
 	}
 
 	/**
@@ -137,13 +270,15 @@ public class OfflineMapActivity extends SherlockActivity {
 	}
 
 	/**
-	 * @return the mapview to be used
+	 * @return the layout to be used
 	 */
+	protected int getLayoutId() {
+		return R.layout.offlinemap;
+	}
+
 	protected MapView getMapView() {
-		// in this example the mapview is defined in the layout file
-		// mapviewer.xml
 		setContentView(getLayoutId());
-		return (MapView) this.findViewById(R.id.offlinemapview);
+		return (MapView) findViewById(R.id.offlinemapview);
 	}
 
 	/**
@@ -154,61 +289,55 @@ public class OfflineMapActivity extends SherlockActivity {
 	}
 
 	/**
-	 * initializes the map view, here from source
+	 * @return the rendertheme for this viewer
 	 */
-	protected void init() {
-		this.mapView = getMapView();
-
-		initializeMapView(this.mapView, this.preferencesFacade);
-
-		this.tileCache = createTileCache();
-
-		mapViewPosition = this
-				.initializePosition(this.mapView.getModel().mapViewPosition);
-
-		addLayers(this.mapView.getLayerManager(), this.tileCache,
-				mapViewPosition);
-
+	protected XmlRenderTheme getRenderTheme() {
+		return InternalRenderTheme.OSMARENDER;
 	}
 
 	/**
-	 * initializes the map view
-	 * 
-	 * @param mapView
-	 *            the map view
+	 * @return the screen ratio that the mapview takes up (for cache
+	 *         calculation)
 	 */
-	protected void initializeMapView(MapView mapView,
-			PreferencesFacade preferences) {
-		mapView.getModel().init(preferences);
-		mapView.setClickable(true);
-		mapView.setLongClickable(true);
-		mapView.getMapScaleBar().setVisible(true);
+	protected float getScreenRatio() {
+		return 1.0f;
+	}
+
+	protected boolean hasZoomControls() {
+		return true;
 	}
 
 	/**
-	 * initializes the map view position
+	 * initializes the map view position.
 	 * 
-	 * @param mapViewPosition
+	 * @param mvp
 	 *            the map view position to be set
 	 * @return the mapviewposition set
 	 */
-	protected MapViewPosition initializePosition(MapViewPosition mapViewPosition) {
-		LatLong center = mapViewPosition.getCenter();
+	protected MapViewPosition initializePosition(MapViewPosition mvp) {
+		LatLong center = mvp.getCenter();
 
 		if (center.equals(new LatLong(0, 0))) {
-			mapViewPosition.setMapPosition(this.getInitialPosition());
+			mvp.setMapPosition(this.getInitialPosition());
 		}
-		return mapViewPosition;
+		mvp.setZoomLevelMax((byte) 24);
+		mvp.setZoomLevelMin((byte) 7);
+		return mvp;
 	}
 
+	@SuppressLint("NewApi")
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		preferences = PreferenceManager.getDefaultSharedPreferences(this);
-		offline_mode = preferences.getBoolean("offline_chkbox_preference",
-				false);
-		SharedPreferences.Editor editor = preferences.edit();
+		this.sharedPreferences = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		this.sharedPreferences.registerOnSharedPreferenceChangeListener(this);
+		AndroidGraphicFactory.createInstance(getApplication());
+
+		offline_mode = sharedPreferences.getBoolean(
+				"offline_chkbox_preference", false);
+		SharedPreferences.Editor editor = sharedPreferences.edit();
 		File filecheck = new File(Environment.getExternalStorageDirectory()
 				.getPath() + "/merobhadameter/maps/kathmandu-gh/kathmandu.map");
 
@@ -218,27 +347,23 @@ public class OfflineMapActivity extends SherlockActivity {
 					"No Offline Map File Present. Please Download it by Clicking Download in the Menu",
 					Toast.LENGTH_LONG).show();
 			editor.putBoolean("offline_chkbox_preference", false);
-			editor.apply();
+			if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.GINGERBREAD) {
+				editor.apply();
+			} else {
+				editor.commit();
+			}
+
 			Intent Map = new Intent(this, MapActivity.class);
 			startActivity(Map);
 			finish();
 		}
 
-		// GraphHopper gh = new GraphHopper().forMobile();
-		// gh.setCHShortcuts(true, true);
-		// gh.load(Environment.getExternalStorageDirectory()
-		// + "/merobhadameter/maps/kathmandu-gh/");
-		//
-		// GHRequest request = new GHRequest(27.707, 85.315, 27.710, 85.325);
-		// request.setAlgorithm("dijkstrabi");
-		// GHResponse response = gh.route(request);
-		// String gh_value = String.valueOf(response);
-		// Log.i("What GraphHopper API Response", gh_value);
-
-		SharedPreferences sharedPreferences = this.getSharedPreferences(
-				getPersistableId(), MODE_PRIVATE);
-		this.preferencesFacade = new AndroidPreferences(sharedPreferences);
-		init();
+		createSharedPreferences();
+		createMapViews();
+		createMapViewPositions();
+		createLayerManagers();
+		createTileCaches();
+		createControls();
 
 		tracking = false;
 
@@ -254,38 +379,61 @@ public class OfflineMapActivity extends SherlockActivity {
 	}
 
 	@Override
-	protected void onStart() {
-		super.onStart();
-		preferences = PreferenceManager.getDefaultSharedPreferences(this);
-		offline_mode = preferences.getBoolean("offline_chkbox_preference",
-				false);
-		if (!offline_mode) {
-			Intent Map = new Intent(this, MapActivity.class);
-			startActivity(Map);
-		}
-	}
-
-	@Override
 	protected void onDestroy() {
 		super.onDestroy();
-
-		this.mapView.destroy();
+		destroyTileCaches();
+		destroyMapViewPositions();
+		destroyMapViews();
+		this.sharedPreferences.unregisterOnSharedPreferenceChangeListener(this);
+		org.mapsforge.map.android.graphics.AndroidResourceBitmap
+				.clearResourceBitmaps();
 	}
 
 	@Override
 	protected void onPause() {
+		myLocationOverlay.disableMyLocation();
 		super.onPause();
-		this.mapView.getModel().save(this.preferencesFacade);
+		for (MapView mapView : mapViews) {
+			mapView.getModel().save(this.preferencesFacade);
+		}
 		this.preferencesFacade.save();
-		// stop receiving location updates
-		this.myLocationOverlay.disableMyLocation();
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+		offline_mode = sharedPreferences.getBoolean(
+				"offline_chkbox_preference", false);
+		if (!offline_mode) {
+			Intent Map = new Intent(this, MapActivity.class);
+			startActivity(Map);
+		}
+		createLayers();
 	}
 
 	@Override
 	public void onResume() {
 		super.onResume();
-		// register for location updates
 		this.myLocationOverlay.enableMyLocation(true);
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+		destroyLayers();
+	}
+
+	protected void redrawLayers() {
+		for (LayerManager layerManager : this.layerManagers) {
+			layerManager.redrawLayers();
+		}
+	}
+
+	/**
+	 * sets the content view if it has not been set already.
+	 */
+	protected void setContentView() {
+		setContentView(this.mapViews.get(0));
 	}
 
 	@Override
@@ -301,8 +449,6 @@ public class OfflineMapActivity extends SherlockActivity {
 		case R.id.action_track:
 			if (tracking) {
 
-				
-
 				// compute the total time we were tracking
 
 				long milliseconds = System.currentTimeMillis() - startTime;
@@ -317,7 +463,7 @@ public class OfflineMapActivity extends SherlockActivity {
 
 				tracking = false;
 				item.setTitle("Strat Tracking");
-				
+
 				// mapb.setEnabled(true);
 
 			} else {
@@ -327,14 +473,12 @@ public class OfflineMapActivity extends SherlockActivity {
 					buildAlertMessageNoGps();
 					return true;
 				}
-				
+
 				item.setTitle("Stop Tracking");
 				tracking = true;
-				// mapb.setEnabled(false);
-				//TODO make this change to the flagdown of the currently running fare
-				faredisplay.setText("Fare Amount: Rs 14 . 00");
+				faredisplay.setText("Fare Amount: RS " + String.valueOf(Fare.getFlagdownRate()));
 				startTime = System.currentTimeMillis(); // get current time
-				mapView.invalidate();// clear the route
+				latLongs_track.clear();
 				distanceTraveled = 0;
 				previousLocation = null;
 
@@ -370,24 +514,19 @@ public class OfflineMapActivity extends SherlockActivity {
 		return super.onOptionsItemSelected(item);
 	}
 
-	public static LatLong locationToLatLong(Location location) {
-		return new LatLong(location.getLatitude(), location.getLongitude());
-	}
-
 	// Alert dialog to propmt user to enable gps
 	private void buildAlertMessageNoGps() {
 		final AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(
 				"Your GPS seems to be disabled, Please enable it to start tracking")
 				.setCancelable(false)
-				.setPositiveButton("Ok",
-						new DialogInterface.OnClickListener() {
-							public void onClick(final DialogInterface dialog,
-									final int id) {
-								startActivity(new Intent(
-										android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
-							}
-						})
+				.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+					public void onClick(final DialogInterface dialog,
+							final int id) {
+						startActivity(new Intent(
+								android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS));
+					}
+				})
 				.setNegativeButton("No", new DialogInterface.OnClickListener() {
 					public void onClick(final DialogInterface dialog,
 							final int id) {
@@ -396,63 +535,6 @@ public class OfflineMapActivity extends SherlockActivity {
 				});
 		final AlertDialog alert = builder.create();
 		alert.show();
-	}
-
-	// update location on map
-	public void updateLocation(Location location) {
-		if (location != null && gpsFix) // location not null; have GPS fix
-		{
-			// add the given Location to the route
-
-			marker_start.setLatLong(gpsStartPoint);
-			marker_destination.setLatLong(gpsEndPoint);
-			latLongs_track.clear();
-
-			GraphHopper gh = new GraphHopper().forMobile();
-			gh.setCHShortcuts(true, true);
-			gh.load(Environment.getExternalStorageDirectory()
-					+ "/merobhadameter/maps/kathmandu-gh/");
-
-			GHRequest request = new GHRequest(gpsStartPoint.latitude,
-					gpsStartPoint.longitude, gpsEndPoint.latitude,
-					gpsEndPoint.longitude);
-			request.setAlgorithm("dijkstrabi");
-			GHResponse response = gh.route(request);
-			String gh_value = String.valueOf(response);
-			Log.i("What GraphHopper API Response", gh_value);
-
-			int points = response.getPoints().getSize();
-			PointList tmp = response.getPoints();
-			for (int i = 0; i < points; i++) {
-				latLongs_track.add(new LatLong(tmp.getLatitude(i), tmp
-						.getLongitude(i)));
-			}
-
-			// if there is a previous location
-			if (previousLocation != null) {
-
-				distanceTraveled += location.distanceTo(previousLocation);
-				Fare realtime_fare = new Fare(this, distanceTraveled / 1000.0,
-						"01");
-				realtime_fare.calculate();
-				int rupees, paisa;
-				rupees = realtime_fare.getRupees();
-				paisa = realtime_fare.getPaisa();
-				faredisplay.setText(String.format("Fare Amount: Rs %d . %d",
-						rupees, paisa));
-
-			} else {
-
-				gpsStartPoint = locationToLatLong(location);
-			}
-
-			gpsEndPoint = locationToLatLong(location);
-			MapPosition center = new MapPosition(gpsEndPoint, (byte) 17);
-			mapViewPosition.setMapPosition(center);
-
-		}
-
-		previousLocation = location;
 	}
 
 	// responds to events from the LocationManager
@@ -477,6 +559,55 @@ public class OfflineMapActivity extends SherlockActivity {
 		}
 	};
 
+	// update location on map
+	public void updateLocation(Location location) {
+		if (location != null && gpsFix) // location not null; have GPS fix
+		{
+			
+			// add the given Location to the route
+			
+
+
+
+			// if there is a previous location
+			if (previousLocation != null) {
+
+				distanceTraveled += location.distanceTo(previousLocation);
+				Fare realtime_fare = new Fare(this, distanceTraveled / 1000.0,
+						"01");
+				realtime_fare.calculate();
+				int rupees, paisa;
+				rupees = realtime_fare.getRupees();
+				paisa = realtime_fare.getPaisa();
+				faredisplay.setText(String.format("Fare Amount: Rs %d . %d",
+						rupees, paisa));
+				latLongs_track.add(gpsEndPoint);
+				gpsEndPoint = locationToLatLong(location);			
+				marker_destination.setLatLong(gpsEndPoint);
+				
+				this.mapViews.get(0).getModel().mapViewPosition
+				.animateTo(gpsEndPoint);
+
+			} else {
+
+				gpsStartPoint = locationToLatLong(location);
+				latLongs_track.add(gpsStartPoint);
+				marker_start.setLatLong(gpsStartPoint);
+			}
+
+			
+
+			
+
+		}
+
+		previousLocation = location;
+	}
+
+	public static LatLong locationToLatLong(Location location) {
+		return new LatLong(location.getLatitude(), location.getLongitude());
+	}
+
 	GpsStatus.Listener gpsStatusListener = new GpsStatus.Listener() {
 		public void onGpsStatusChanged(int event) {
 			if (event == GpsStatus.GPS_EVENT_FIRST_FIX) {
@@ -494,5 +625,75 @@ public class OfflineMapActivity extends SherlockActivity {
 			}
 		}
 	};
+
+	protected void onLongPress(LatLong position) {
+
+		openContextMenu(this.mapViews.get(0));
+		tmpClickedPoint = position;
+
+	}
+
+	@Override
+	public void onCreateContextMenu(ContextMenu menu, View v,
+			ContextMenuInfo menuInfo) {
+		super.onCreateContextMenu(menu, v, menuInfo);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.map_menu, menu);
+	}
+
+	@Override
+	public boolean onContextItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.menu_departure:
+			departurePoint = tmpClickedPoint;
+			marker_set_start.setLatLong(tmpClickedPoint);
+			getRoad();
+			redrawLayers();
+			return true;
+		case R.id.menu_destination:
+			destinationPoint = tmpClickedPoint;
+			marker_set_destination.setLatLong(tmpClickedPoint);
+			getRoad();
+			redrawLayers();
+			return true;
+			
+		case R.id.menu_viapoint:
+			Toast.makeText(this, "This feature is in Progress for Offline",
+					Toast.LENGTH_LONG).show();
+			return true;
+		default:
+			return super.onContextItemSelected(item);
+		}
+	}
+	
+	void getRoad(){
+		if (departurePoint == null || destinationPoint == null ){
+			return;
+		}
+		latLongs_track.clear();
+		GraphHopper gh = new GraphHopper().forMobile();
+		gh.setCHShortcuts(true, true);
+		gh.load(Environment.getExternalStorageDirectory()
+				+ "/merobhadameter/maps/kathmandu-gh/");
+
+		GHRequest request = new GHRequest(departurePoint.latitude,
+				departurePoint.longitude, destinationPoint.latitude,
+				destinationPoint.longitude);
+		request.setAlgorithm("dijkstrabi");
+		GHResponse response = gh.route(request);
+		String gh_value = String.valueOf(response);
+		Log.i("What GraphHopper API Response", gh_value);
+
+		int points = response.getPoints().getSize();
+		PointList tmp = response.getPoints();
+		for (int i = 0; i < points; i++) {
+			latLongs_track.add(new LatLong(tmp.getLatitude(i), tmp
+					.getLongitude(i)));
+		}
+		Fare f = new Fare(this,response.getDistance()/1000,"01");
+		f.calculate();
+		f.show();
+		
+	}
 
 }

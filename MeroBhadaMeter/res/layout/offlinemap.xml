@@ -16,7 +16,7 @@
           android:layout_height="fill_parent"
           android:gravity="center"
           android:textColor="#b50000"
-          android:textSize="35sp"
+          android:textSize="30sp"
           android:text="Fare Amount"
           android:padding="6sp" />
           

@@ -21,8 +21,7 @@ import org.osmdroid.bonuspack.overlays.ExtendedOverlayItem;
 import org.osmdroid.bonuspack.overlays.ItemizedOverlayWithBubble;
 import org.osmdroid.bonuspack.overlays.MapEventsOverlay;
 import org.osmdroid.bonuspack.overlays.MapEventsReceiver;
-import org.osmdroid.bonuspack.routing.GoogleRoadManager;
-//import org.osmdroid.bonuspack.routing.OSRMRoadManager;
+import org.osmdroid.bonuspack.routing.OSRMRoadManager;
 import org.osmdroid.bonuspack.routing.Road;
 import org.osmdroid.bonuspack.routing.RoadManager;
 import org.osmdroid.bonuspack.routing.RoadNode;
@@ -60,9 +59,7 @@ import android.view.Gravity;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -115,7 +112,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		mv.setBuiltInZoomControls(true);
 		mv.setMultiTouchControls(true);
 
-		mc = mv.getController();
+		mc = (MapController) mv.getController();
 		kathmandu = new GeoPoint(27.7167, 85.3667);
 		distanceTraveled = 0;
 		faredisplay = (TextView)findViewById(R.id.faredisplay);
@@ -453,7 +450,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 			@SuppressWarnings("unchecked")
 			ArrayList<GeoPoint> waypoints = (ArrayList<GeoPoint>) params[0];
 			RoadManager roadManager = null;
-			roadManager = new GoogleRoadManager();
+			roadManager = new OSRMRoadManager();
 			return roadManager.getRoad(waypoints);
 		}
 

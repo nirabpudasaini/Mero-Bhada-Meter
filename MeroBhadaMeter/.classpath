@@ -1,13 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="src" path="gen"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.ANDROID_FRAMEWORK"/>
-	<classpathentry exported="true" kind="lib" path="libs/osmdroid-android-3.0.8.jar"/>
 	<classpathentry exported="true" kind="lib" path="libs/slf4j-android-1.5.8.jar"/>
-	<classpathentry kind="lib" path="libs/mapsforger-rewrite.jar"/>
 	<classpathentry kind="lib" path="libs/graphhopper-0.2-SNAPSHOT-android.jar"/>
+	<classpathentry kind="lib" path="libs/mapsforge-core-0.4.0-SNAPSHOT.jar" sourcepath="/root/Downloads/archive/mapsforge-core/target/mapsforge-core-0.4.0-SNAPSHOT-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/root/Downloads/archive/mapsforge-core/target/mapsforge-core-0.4.0-SNAPSHOT-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="libs/mapsforge-map-0.4.0-SNAPSHOT.jar" sourcepath="/root/Downloads/archive/mapsforge-map/target/mapsforge-map-0.4.0-SNAPSHOT-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/root/Downloads/archive/mapsforge-map/target/mapsforge-map-0.4.0-SNAPSHOT-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="libs/mapsforge-map-android-0.4.0-SNAPSHOT.jar" sourcepath="/root/Downloads/archive/mapsforge-map-android/target/mapsforge-map-android-0.4.0-SNAPSHOT-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/root/Downloads/archive/mapsforge-map-android/target/mapsforge-map-android-0.4.0-SNAPSHOT-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="libs/mapsforge-map-reader-0.4.0-SNAPSHOT.jar" sourcepath="/root/Downloads/archive/mapsforge-map-reader/target/mapsforge-map-reader-0.4.0-SNAPSHOT-sources.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/root/Downloads/archive/mapsforge-map-reader/target/mapsforge-map-reader-0.4.0-SNAPSHOT-javadoc.jar!/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.DEPENDENCIES"/>
 	<classpathentry exported="true" kind="con" path="com.android.ide.eclipse.adt.LIBRARIES"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="gen"/>
 	<classpathentry kind="output" path="bin/classes"/>
 </classpath>
