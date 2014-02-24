@@ -74,16 +74,16 @@ public class OfflineMapActivity extends SherlockActivity implements
 	protected PreferencesFacade preferencesFacade;
 	protected SharedPreferences sharedPreferences;
 
-	protected Marker marker_start, marker_destination,marker_set_start, marker_set_destination;
+	protected Marker marker_start, marker_destination, marker_set_start,
+			marker_set_destination;
 	protected Polyline polyline_track;
-	protected List<LatLong> latLongs_track;
+	protected List<LatLong> latLongs_track = new ArrayList<LatLong>();
 
 	protected TileCache tileCache;
 
 	TextView faredisplay;
 
-	protected LatLong gpsStartPoint = new LatLong(0, 0);
-	protected LatLong gpsEndPoint = new LatLong(0, 0);
+	protected LatLong gpsStartPoint, gpsEndPoint;
 	protected LatLong tmpClickedPoint = new LatLong(0, 0);
 	protected LatLong departurePoint, destinationPoint;
 	private MyLocationOverlay myLocationOverlay;
@@ -111,17 +111,16 @@ public class OfflineMapActivity extends SherlockActivity implements
 			redrawLayers();
 		}
 	}
-	
+
 	protected void addOverlayLayers(Layers layers) {
 		marker_start = Utils.createMarker(this, R.drawable.marker_departure,
 				gpsStartPoint);
 		marker_destination = Utils.createMarker(this,
 				R.drawable.marker_destination, gpsEndPoint);
-		marker_set_start = Utils.createTappableMarker(this,
-				R.drawable.marker_departure,departurePoint);
-		marker_set_destination = Utils.createTappableMarker(this,
-				R.drawable.marker_destination,destinationPoint);
-		
+		marker_set_start = Utils.createMarker(this,
+				R.drawable.marker_departure, departurePoint);
+		marker_set_destination = Utils.createMarker(this,
+				R.drawable.marker_destination, destinationPoint);
 
 		layers.add(marker_start);
 		layers.add(marker_destination);
@@ -171,9 +170,9 @@ public class OfflineMapActivity extends SherlockActivity implements
 		// create the overlay and tell it to follow the location
 		this.myLocationOverlay = new MyLocationOverlay(this,
 				this.mapViewPositions.get(0), bitmap);
-		this.myLocationOverlay.setSnapToLocationEnabled(true);
+		this.myLocationOverlay.setSnapToLocationEnabled(false);
 		this.layerManagers.get(0).getLayers().add(this.myLocationOverlay);
-		
+
 		addOverlayLayers(layerManagers.get(0).getLayers());
 	}
 
@@ -215,6 +214,7 @@ public class OfflineMapActivity extends SherlockActivity implements
 			for (Layer layer : layerManager.getLayers()) {
 				layerManager.getLayers().remove(layer);
 				layer.onDestroy();
+				Log.i("DESTROY", "Destroyed: "+ layer.toString());
 			}
 		}
 	}
@@ -449,7 +449,7 @@ public class OfflineMapActivity extends SherlockActivity implements
 		case R.id.action_track:
 			if (tracking) {
 
-				// compute the total time we were tracking
+				// Things to be done when user hits "Stop Tracking"
 
 				long milliseconds = System.currentTimeMillis() - startTime;
 				double totalHours = milliseconds / MILLISECONDS_PER_HOUR;
@@ -467,7 +467,7 @@ public class OfflineMapActivity extends SherlockActivity implements
 				// mapb.setEnabled(true);
 
 			} else {
-				// check for gps settings
+				// Things that are done when user hits "Start Tracking"
 				if (!locationManager
 						.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
 					buildAlertMessageNoGps();
@@ -476,11 +476,14 @@ public class OfflineMapActivity extends SherlockActivity implements
 
 				item.setTitle("Stop Tracking");
 				tracking = true;
-				faredisplay.setText("Fare Amount: RS " + String.valueOf(Fare.getFlagdownRate()));
+				faredisplay.setText("Fare Amount: RS "
+						+ String.valueOf(Fare.getFlagdownRate()));
 				startTime = System.currentTimeMillis(); // get current time
 				latLongs_track.clear();
 				distanceTraveled = 0;
 				previousLocation = null;
+				resetMarkers();
+						
 
 			}
 
@@ -513,6 +516,21 @@ public class OfflineMapActivity extends SherlockActivity implements
 
 		return super.onOptionsItemSelected(item);
 	}
+	
+	protected void resetMarkers(){
+		destroyLayers();
+		gpsStartPoint = null;
+		gpsEndPoint = null;
+		departurePoint = null;
+		destinationPoint = null;
+		createLayers();
+		redrawLayers();
+	}
+	
+
+
+
+
 
 	// Alert dialog to propmt user to enable gps
 	private void buildAlertMessageNoGps() {
@@ -563,11 +581,8 @@ public class OfflineMapActivity extends SherlockActivity implements
 	public void updateLocation(Location location) {
 		if (location != null && gpsFix) // location not null; have GPS fix
 		{
-			
+
 			// add the given Location to the route
-			
-
-
 
 			// if there is a previous location
 			if (previousLocation != null) {
@@ -581,12 +596,13 @@ public class OfflineMapActivity extends SherlockActivity implements
 				paisa = realtime_fare.getPaisa();
 				faredisplay.setText(String.format("Fare Amount: Rs %d . %d",
 						rupees, paisa));
-				latLongs_track.add(gpsEndPoint);
-				gpsEndPoint = locationToLatLong(location);			
+
+				gpsEndPoint = locationToLatLong(location);
+				this.latLongs_track.add(gpsEndPoint);
 				marker_destination.setLatLong(gpsEndPoint);
-				
+
 				this.mapViews.get(0).getModel().mapViewPosition
-				.animateTo(gpsEndPoint);
+						.animateTo(gpsEndPoint);
 
 			} else {
 
@@ -595,13 +611,11 @@ public class OfflineMapActivity extends SherlockActivity implements
 				marker_start.setLatLong(gpsStartPoint);
 			}
 
-			
-
-			
-
 		}
-
+		
+		Log.i("LATLONGS",String.valueOf(latLongs_track));
 		previousLocation = location;
+		redrawLayers();
 	}
 
 	public static LatLong locationToLatLong(Location location) {
@@ -627,6 +641,10 @@ public class OfflineMapActivity extends SherlockActivity implements
 	};
 
 	protected void onLongPress(LatLong position) {
+		if (tracking){
+			Toast.makeText(this, "Tracking in Progress", Toast.LENGTH_LONG).show();
+			return;
+		}
 
 		openContextMenu(this.mapViews.get(0));
 		tmpClickedPoint = position;
@@ -656,7 +674,7 @@ public class OfflineMapActivity extends SherlockActivity implements
 			getRoad();
 			redrawLayers();
 			return true;
-			
+
 		case R.id.menu_viapoint:
 			Toast.makeText(this, "This feature is in Progress for Offline",
 					Toast.LENGTH_LONG).show();
@@ -665,11 +683,15 @@ public class OfflineMapActivity extends SherlockActivity implements
 			return super.onContextItemSelected(item);
 		}
 	}
-	
-	void getRoad(){
-		if (departurePoint == null || destinationPoint == null ){
+
+	void getRoad() {
+		if (departurePoint == null || destinationPoint == null) {
+			if (gpsStartPoint != null || gpsEndPoint != null){
+				resetMarkers();
+			}
 			return;
 		}
+		
 		latLongs_track.clear();
 		GraphHopper gh = new GraphHopper().forMobile();
 		gh.setCHShortcuts(true, true);
@@ -690,10 +712,15 @@ public class OfflineMapActivity extends SherlockActivity implements
 			latLongs_track.add(new LatLong(tmp.getLatitude(i), tmp
 					.getLongitude(i)));
 		}
-		Fare f = new Fare(this,response.getDistance()/1000,"01");
+		Fare f = new Fare(this, response.getDistance() / 1000, "01");
 		f.calculate();
 		f.show();
-		
+		int rupees, paisa;
+		rupees = f.getRupees();
+		paisa = f.getPaisa();
+		faredisplay.setText(String.format("Fare Amount: Rs %d . %d",
+				rupees, paisa));
+
 	}
 
 }

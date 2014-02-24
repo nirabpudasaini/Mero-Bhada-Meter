@@ -3,7 +3,7 @@ package com.nirab.merobhadameter;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.text.format.Time;
-import android.util.Log;
+
 
 public class Fare {
 
@@ -81,7 +81,7 @@ public class Fare {
 
 		dialogBuilder
 				.setMessage(String
-						.format("Total distance: %.02f Kilometers /n Total Fare: %d Rupees and %d Paisa",
+						.format("Total distance: %.02f Kilometers \n Total Fare: %d Rupees and %d Paisa",
 								distance_road, rupees, paisa));
 		dialogBuilder.setPositiveButton("Ok", null);
 		dialogBuilder.show(); // display the dialog
