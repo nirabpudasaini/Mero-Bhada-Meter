@@ -41,6 +41,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.TypedArray;
+import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.location.Address;
 import android.location.GpsStatus;
@@ -116,6 +117,9 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		kathmandu = new GeoPoint(27.7167, 85.3667);
 		distanceTraveled = 0;
 		faredisplay = (TextView)findViewById(R.id.faredisplay);
+		Typeface face = Typeface.createFromAsset(getAssets(),
+				"fonts/led-real-regular.ttf");
+		faredisplay.setTypeface(face, 1);
 
 		// To use MapEventsReceiver methods, we add a MapEventsOverlay:
 		MapEventsOverlay overlay = new MapEventsOverlay(this, this);
@@ -625,7 +629,8 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 				}
 				item.setTitle("Stop Tracking");
 				//TODO make this change to the flagdown of the currently running fare
-				faredisplay.setText("Fare Amount: Rs 14 . 00");
+				faredisplay.setText("Fare Amount: RS "
+						+ String.valueOf(Fare.getFlagdownRate()));
 				tracking = true;
 				mapb.setEnabled(false);
 				startTime = System.currentTimeMillis(); // get current time
