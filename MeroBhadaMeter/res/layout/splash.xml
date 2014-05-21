@@ -9,7 +9,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:scaleType="fitCenter"
-    android:src="@drawable/merobhadameter" 
+    android:src="@drawable/merobhadameter"
+    android:contentDescription="@string/app_name" 
     android:background="#000000" >
 
 </ImageView>

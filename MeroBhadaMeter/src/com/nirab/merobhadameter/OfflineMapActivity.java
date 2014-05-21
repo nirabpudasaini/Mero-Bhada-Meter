@@ -78,6 +78,7 @@ public class OfflineMapActivity extends SherlockActivity implements
 			marker_set_destination;
 	protected Polyline polyline_track;
 	protected List<LatLong> latLongs_track = new ArrayList<LatLong>();
+	protected List<LatLong> tmpLatLongs_track = new ArrayList<LatLong>();
 
 	protected TileCache tileCache;
 
@@ -131,6 +132,14 @@ public class OfflineMapActivity extends SherlockActivity implements
 				AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE), 8,
 				Style.STROKE), AndroidGraphicFactory.INSTANCE);
 		latLongs_track = polyline_track.getLatLongs();
+		if (tmpLatLongs_track != null) {
+			for (int i = 0; i < tmpLatLongs_track.size(); i++) {
+
+				latLongs_track.add(tmpLatLongs_track.get(i));
+
+			}
+		}
+		Log.i("LatLongs in Overlay", String.valueOf(latLongs_track));
 
 		layers.add(polyline_track);
 
@@ -214,7 +223,7 @@ public class OfflineMapActivity extends SherlockActivity implements
 			for (Layer layer : layerManager.getLayers()) {
 				layerManager.getLayers().remove(layer);
 				layer.onDestroy();
-				Log.i("DESTROY", "Destroyed: "+ layer.toString());
+				Log.i("DESTROY", "Destroyed: " + layer.toString());
 			}
 		}
 	}
@@ -483,7 +492,6 @@ public class OfflineMapActivity extends SherlockActivity implements
 				distanceTraveled = 0;
 				previousLocation = null;
 				resetMarkers();
-						
 
 			}
 
@@ -516,8 +524,8 @@ public class OfflineMapActivity extends SherlockActivity implements
 
 		return super.onOptionsItemSelected(item);
 	}
-	
-	protected void resetMarkers(){
+
+	protected void resetMarkers() {
 		destroyLayers();
 		gpsStartPoint = null;
 		gpsEndPoint = null;
@@ -526,11 +534,6 @@ public class OfflineMapActivity extends SherlockActivity implements
 		createLayers();
 		redrawLayers();
 	}
-	
-
-
-
-
 
 	// Alert dialog to propmt user to enable gps
 	private void buildAlertMessageNoGps() {
@@ -583,6 +586,9 @@ public class OfflineMapActivity extends SherlockActivity implements
 		{
 
 			// add the given Location to the route
+			if (tmpLatLongs_track != null) {
+				latLongs_track = tmpLatLongs_track;
+			}
 
 			// if there is a previous location
 			if (previousLocation != null) {
@@ -598,7 +604,7 @@ public class OfflineMapActivity extends SherlockActivity implements
 						rupees, paisa));
 
 				gpsEndPoint = locationToLatLong(location);
-				this.latLongs_track.add(gpsEndPoint);
+				latLongs_track.add(gpsEndPoint);
 				marker_destination.setLatLong(gpsEndPoint);
 
 				this.mapViews.get(0).getModel().mapViewPosition
@@ -612,10 +618,15 @@ public class OfflineMapActivity extends SherlockActivity implements
 			}
 
 		}
-		
-		Log.i("LATLONGS",String.valueOf(latLongs_track));
+
+		Log.i("LATLONGS", String.valueOf(latLongs_track));
 		previousLocation = location;
-		redrawLayers();
+		destroyLayers();
+		createLayers();
+
+		if (latLongs_track != null) {
+			tmpLatLongs_track = latLongs_track;
+		}
 	}
 
 	public static LatLong locationToLatLong(Location location) {
@@ -641,8 +652,9 @@ public class OfflineMapActivity extends SherlockActivity implements
 	};
 
 	protected void onLongPress(LatLong position) {
-		if (tracking){
-			Toast.makeText(this, "Tracking in Progress", Toast.LENGTH_LONG).show();
+		if (tracking) {
+			Toast.makeText(this, "Tracking in Progress", Toast.LENGTH_LONG)
+					.show();
 			return;
 		}
 
@@ -686,12 +698,12 @@ public class OfflineMapActivity extends SherlockActivity implements
 
 	void getRoad() {
 		if (departurePoint == null || destinationPoint == null) {
-			if (gpsStartPoint != null || gpsEndPoint != null){
+			if (gpsStartPoint != null || gpsEndPoint != null) {
 				resetMarkers();
 			}
 			return;
 		}
-		
+
 		latLongs_track.clear();
 		GraphHopper gh = new GraphHopper().forMobile();
 		gh.setCHShortcuts(true, true);
@@ -712,14 +724,15 @@ public class OfflineMapActivity extends SherlockActivity implements
 			latLongs_track.add(new LatLong(tmp.getLatitude(i), tmp
 					.getLongitude(i)));
 		}
+		Log.i("Latlong after gh calculation", String.valueOf(latLongs_track));
 		Fare f = new Fare(this, response.getDistance() / 1000, "01");
 		f.calculate();
 		f.show();
 		int rupees, paisa;
 		rupees = f.getRupees();
 		paisa = f.getPaisa();
-		faredisplay.setText(String.format("Fare Amount: Rs %d . %d",
-				rupees, paisa));
+		faredisplay.setText(String.format("Fare Amount: Rs %d . %d", rupees,
+				paisa));
 
 	}
 

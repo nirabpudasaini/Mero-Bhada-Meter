@@ -485,7 +485,7 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 
 		
 
-		//TODO Calculate the rate using Shared Preference and the Calculate Fare Class
+		
 		
 
 
@@ -498,7 +498,6 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 		}
 		
 		
-		//TODO
 		road_distance = road.mLength;
 		vehicle_type = preferences.getString("vehicle_list_preference", "01");
 		Fare fare = new Fare(this, road_distance, "01");
