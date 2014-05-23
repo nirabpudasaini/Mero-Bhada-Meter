@@ -691,6 +691,9 @@ public class OfflineMapActivity extends SherlockActivity implements
 			Toast.makeText(this, "This feature is in Progress for Offline",
 					Toast.LENGTH_LONG).show();
 			return true;
+		case R.id.menu_reset_markers:
+			resetMarkers();
+			return true;
 		default:
 			return super.onContextItemSelected(item);
 		}

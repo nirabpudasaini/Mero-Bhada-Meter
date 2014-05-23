@@ -1008,7 +1008,8 @@ containing a value of this type.
         public static final int mapview_btn_offline=0x7f050044;
         public static final int menu_departure=0x7f05004c;
         public static final int menu_destination=0x7f05004d;
-        public static final int menu_none=0x7f05004f;
+        public static final int menu_none=0x7f050050;
+        public static final int menu_reset_markers=0x7f05004f;
         public static final int menu_settings=0x7f050048;
         public static final int menu_viapoint=0x7f05004e;
         public static final int normal=0x7f050001;
@@ -1104,30 +1105,35 @@ containing a value of this type.
         /**  Description of a share target (both in the list of such or the default share button) in a ShareActionProvider (share UI). [CHAR LIMIT=NONE] 
          */
         public static final int abs__shareactionprovider_share_with_application=0x7f0a0007;
-        public static final int action_download=0x7f0a0020;
-        public static final int action_offline=0x7f0a0021;
-        public static final int action_preference=0x7f0a0024;
-        public static final int action_search=0x7f0a001f;
-        public static final int action_stop_track=0x7f0a0023;
-        public static final int action_track=0x7f0a0022;
+        public static final int action_download=0x7f0a0025;
+        public static final int action_offline=0x7f0a0026;
+        public static final int action_preference=0x7f0a0029;
+        public static final int action_search=0x7f0a0024;
+        public static final int action_stop_track=0x7f0a0028;
+        public static final int action_track=0x7f0a0027;
+        public static final int add_viapoint=0x7f0a0019;
         public static final int app_name=0x7f0a000d;
+        public static final int cancel=0x7f0a0023;
         public static final int departure=0x7f0a0014;
-        public static final int destination=0x7f0a0015;
-        public static final int distance=0x7f0a0017;
-        public static final int distance_value=0x7f0a001b;
-        public static final int fare=0x7f0a0019;
-        public static final int fare_amnt=0x7f0a001a;
-        public static final int fare_value=0x7f0a001d;
+        public static final int destination=0x7f0a0016;
+        public static final int distance=0x7f0a001b;
+        public static final int distance_value=0x7f0a001f;
+        public static final int fare=0x7f0a001d;
+        public static final int fare_amnt=0x7f0a001e;
+        public static final int fare_value=0x7f0a0021;
         public static final int faredetails=0x7f0a0010;
         public static final int hello_world=0x7f0a000f;
         public static final int menu_settings=0x7f0a000e;
         public static final int normal_taxi=0x7f0a0011;
-        public static final int rate=0x7f0a0018;
-        public static final int rate_value=0x7f0a001c;
-        public static final int search=0x7f0a001e;
+        public static final int rate=0x7f0a001c;
+        public static final int rate_value=0x7f0a0020;
+        public static final int reset_markers=0x7f0a001a;
+        public static final int search=0x7f0a0022;
         public static final int select_vehicle=0x7f0a0013;
+        public static final int set_departure=0x7f0a0015;
+        public static final int set_destination=0x7f0a0017;
         public static final int tourist_taxi=0x7f0a0012;
-        public static final int viapoint=0x7f0a0016;
+        public static final int viapoint=0x7f0a0018;
     }
     public static final class style {
         /** 

@@ -326,6 +326,11 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 			addViaPoint(viaPoint);
 			getRoadAsync();
 			return true;
+			
+		case R.id.menu_reset_markers:
+			removeMarkers();
+			return true;
+			
 		default:
 			return super.onContextItemSelected(item);
 		}
@@ -396,6 +401,14 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 					DEST_INDEX, R.string.destination,
 					R.drawable.marker_destination, -1);
 		}
+	}
+	
+	public void removeMarkers(){
+		startPoint = null;
+		destinationPoint = null;
+		viaPoints.clear();
+		updateUIWithItineraryMarkers();
+		
 	}
 
 	// Async task to reverse-geocode the marker position in a separate thread:
@@ -628,7 +641,6 @@ public class MapActivity extends SherlockActivity implements MapEventsReceiver {
 					return true;
 				}
 				item.setTitle("Stop Tracking");
-				//TODO make this change to the flagdown of the currently running fare
 				faredisplay.setText("Fare Amount: RS "
 						+ String.valueOf(Fare.getFlagdownRate()));
 				tracking = true;

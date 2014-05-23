@@ -1,15 +1,20 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
+
     <item
         android:id="@+id/menu_departure"
-        android:title="Set Departure"/>
+        android:title="@string/set_departure"/>
     <item
         android:id="@+id/menu_destination"
-        android:title="Set Destination"/>
+        android:title="@string/set_destination"/>
     <item
         android:id="@+id/menu_viapoint"
-        android:title="Add Via-Point"/>
+        android:title="@string/add_viapoint"/>
+    <item
+        android:id="@+id/menu_reset_markers"
+        android:title="@string/reset_markers"/>
     <item
         android:id="@+id/menu_none"
-        android:title="Cancel"/>
+        android:title="@string/cancel"/>
+
 </menu>

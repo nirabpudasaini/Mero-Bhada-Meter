@@ -9,8 +9,12 @@
     <string name="tourist_taxi">Tourist Taxi (Green Number Plate)</string>
     <string name="select_vehicle">Please Select the type of Vehicle</string>
     <string name="departure">Departure</string>
+    <string name="set_departure">Set Departure</string>
     <string name="destination">Destination</string>
+    <string name="set_destination">Set Destination</string>
     <string name="viapoint">Via-Point</string>
+    <string name="add_viapoint">Add Via-Point</string>
+    <string name="reset_markers">Reset Markers</string>
     <string name="distance">Distance: </string>
     <string name="rate">Rate:     </string>
     <string name="fare">Fare:     </string>
@@ -19,6 +23,7 @@
     <string name="rate_value">0.00     </string>
     <string name="fare_value">0.00     </string>
     <string name="search">Search</string>
+    <string name = "cancel">Cancel</string>
     <string name="action_search">Search</string>
     <string name="action_download">Download</string>
     <string name="action_offline">Make Offline</string>
