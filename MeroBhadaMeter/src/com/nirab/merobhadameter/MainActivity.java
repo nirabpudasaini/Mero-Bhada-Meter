@@ -30,7 +30,7 @@ public class MainActivity extends Activity {
 			        {
 			            new File(mapsFolder).mkdirs();
 			        }
-					sleep(1000);
+					sleep(3000);
 				}
 				catch(InterruptedException e){
 					e.printStackTrace();
