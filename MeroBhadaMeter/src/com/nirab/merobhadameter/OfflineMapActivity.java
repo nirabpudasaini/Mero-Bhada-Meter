@@ -76,9 +76,11 @@ public class OfflineMapActivity extends SherlockActivity implements
 
 	protected Marker marker_start, marker_destination, marker_set_start,
 			marker_set_destination;
+	protected ArrayList<Marker> marker_viapoints = new ArrayList<Marker>();
 	protected Polyline polyline_track;
 	protected List<LatLong> latLongs_track = new ArrayList<LatLong>();
 	protected List<LatLong> tmpLatLongs_track = new ArrayList<LatLong>();
+	protected List<LatLong> viaPoints = new ArrayList<LatLong>();
 
 	protected TileCache tileCache;
 
@@ -122,6 +124,11 @@ public class OfflineMapActivity extends SherlockActivity implements
 				R.drawable.marker_departure, departurePoint);
 		marker_set_destination = Utils.createMarker(this,
 				R.drawable.marker_destination, destinationPoint);
+		for (int i = 0; i < marker_viapoints.size(); i++) {
+			marker_viapoints.set(i, Utils.createTappableMarker(this,
+					R.drawable.marker_via, viaPoints.get(i)));
+			layers.add(marker_viapoints.get(i));
+		}
 
 		layers.add(marker_start);
 		layers.add(marker_destination);
@@ -531,6 +538,8 @@ public class OfflineMapActivity extends SherlockActivity implements
 		gpsEndPoint = null;
 		departurePoint = null;
 		destinationPoint = null;
+		viaPoints.clear();
+		marker_viapoints.clear();
 		createLayers();
 		redrawLayers();
 	}
@@ -688,8 +697,10 @@ public class OfflineMapActivity extends SherlockActivity implements
 			return true;
 
 		case R.id.menu_viapoint:
-			Toast.makeText(this, "This feature is in Progress for Offline",
-					Toast.LENGTH_LONG).show();
+			viaPoints.add(tmpClickedPoint);
+			marker_viapoints.add(null);
+			getRoad();
+			redrawLayers();
 			return true;
 		case R.id.menu_reset_markers:
 			resetMarkers();
@@ -708,27 +719,34 @@ public class OfflineMapActivity extends SherlockActivity implements
 		}
 
 		latLongs_track.clear();
-		GraphHopper gh = new GraphHopper().forMobile();
-		gh.setCHShortcuts(true, true);
-		gh.load(Environment.getExternalStorageDirectory()
-				+ "/merobhadameter/maps/kathmandu-gh/");
 
-		GHRequest request = new GHRequest(departurePoint.latitude,
-				departurePoint.longitude, destinationPoint.latitude,
-				destinationPoint.longitude);
-		request.setAlgorithm("dijkstrabi");
-		GHResponse response = gh.route(request);
-		String gh_value = String.valueOf(response);
-		Log.i("What GraphHopper API Response", gh_value);
+		OfflineRoute r = new OfflineRoute(departurePoint, destinationPoint,
+				viaPoints);
+		latLongs_track.addAll(r.getRoute());
 
-		int points = response.getPoints().getSize();
-		PointList tmp = response.getPoints();
-		for (int i = 0; i < points; i++) {
-			latLongs_track.add(new LatLong(tmp.getLatitude(i), tmp
-					.getLongitude(i)));
-		}
-		Log.i("Latlong after gh calculation", String.valueOf(latLongs_track));
-		Fare f = new Fare(this, response.getDistance() / 1000, "01");
+		// GraphHopper gh = new GraphHopper().forMobile();
+		// gh.setCHShortcuts(true, true);
+		// gh.load(Environment.getExternalStorageDirectory()
+		// + "/merobhadameter/maps/kathmandu-gh/");
+		//
+		// GHRequest request = new GHRequest(departurePoint.latitude,
+		// departurePoint.longitude, destinationPoint.latitude,
+		// destinationPoint.longitude);
+		// request.setAlgorithm("dijkstrabi");
+		// GHResponse response = gh.route(request);
+		// String gh_value = String.valueOf(response);
+		// Log.i("What GraphHopper API Response", gh_value);
+		//
+		// int points = response.getPoints().getSize();
+		// PointList tmp = response.getPoints();
+		// for (int i = 0; i < points; i++) {
+		// latLongs_track.add(new LatLong(tmp.getLatitude(i), tmp
+		// .getLongitude(i)));
+		// }
+		// Log.i("Latlong after gh calculation",
+		// String.valueOf(latLongs_track));
+
+		Fare f = new Fare(this, r.getRoadLengthInKm(), "01");
 		f.calculate();
 		f.show();
 		int rupees, paisa;
