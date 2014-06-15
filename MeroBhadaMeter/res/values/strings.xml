@@ -29,6 +29,8 @@
     <string name="action_offline">Make Offline</string>
     <string name="action_track">Start Tracking</string>
     <string name="action_stop_track">Start Tracking</string>
+    <string name="tracking_in_progress">Tracking is current enabled.</string>
+    <string name="tracking_stopped">Tracking has been stopped.</string>
     <string name="action_preference">Preferences</string>
 
 </resources>

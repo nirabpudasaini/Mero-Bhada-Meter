@@ -937,9 +937,8 @@ containing a value of this type.
         public static final int moreinfo_arrow=0x7f020089;
         public static final int moreinfo_arrow_pressed=0x7f02008a;
         public static final int person=0x7f02008b;
-        public static final int taxi=0x7f02008c;
-        public static final int taxi_icon=0x7f02008d;
-        public static final int taxi_icon1=0x7f02008e;
+        public static final int taxi_icon=0x7f02008c;
+        public static final int taxi_icon1=0x7f02008d;
     }
     public static final class id {
         public static final int abs__action_bar=0x7f050020;
@@ -1107,7 +1106,7 @@ containing a value of this type.
         public static final int abs__shareactionprovider_share_with_application=0x7f0a0007;
         public static final int action_download=0x7f0a0025;
         public static final int action_offline=0x7f0a0026;
-        public static final int action_preference=0x7f0a0029;
+        public static final int action_preference=0x7f0a002b;
         public static final int action_search=0x7f0a0024;
         public static final int action_stop_track=0x7f0a0028;
         public static final int action_track=0x7f0a0027;
@@ -1133,6 +1132,8 @@ containing a value of this type.
         public static final int set_departure=0x7f0a0015;
         public static final int set_destination=0x7f0a0017;
         public static final int tourist_taxi=0x7f0a0012;
+        public static final int tracking_in_progress=0x7f0a0029;
+        public static final int tracking_stopped=0x7f0a002a;
         public static final int viapoint=0x7f0a0018;
     }
     public static final class style {
